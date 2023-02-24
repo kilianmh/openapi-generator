@@ -225,7 +225,7 @@
     (make-project
      project-pathname
      :name system-name
-     :depends-on (quote (quri str shasht dexador uiop openapi-generator))
+     :depends-on (quote (quri str com.inuoe.jzon dexador uiop openapi-generator))
      :without-tests t)
     (with-open-file (system pathname-main
                             :direction :output :if-exists :supersede :if-does-not-exist :create)
