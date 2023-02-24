@@ -24,6 +24,8 @@
                 #:split #:substring #:replace-first #:replace-using #:unwords
                 #:from-file #:to-file #:trim #:trim-left
                 #:string-case)
+  (:import-from #:com.inuoe.jzon
+                #:parse)
   (:import-from #:listopia
                 #:intersperse)
   (:import-from #:quri
