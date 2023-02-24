@@ -13,7 +13,7 @@
   (:import-from #:cl-project
                 #:make-project)
   (:import-from #:alexandria
-                #:length=)
+                #:length= #:define-constant)
   (:import-from #:json-mop
                 #:json-serializable-class #:json-to-clos)
   (:import-from #:yason
