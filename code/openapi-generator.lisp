@@ -206,7 +206,7 @@
 (defun make-openapi-client (system-name
                             &key
                               server (output :hash-table) headers authorization cookie
-                              (alias (list :operation-id)) (system-directory :temporary) (load-system t)
+                              (alias (list :operation-id)) (system-directory :library) (load-system t)
                               openapi (api-name system-name) url source-directory collection-id content)
   (let* ((project-pathname
            (make-pathname :directory (concat (trim-left
