@@ -1,0 +1,225 @@
+* Common Lisp OpenAPI Generator (openapi-generator)
+
+OpenAPI-generator is an api client system generator.
+
+** Features
+- Generation of OpenAPI [[https://asdf.common-lisp.dev/][ASDF]]/[[https://www.quicklisp.org][Quicklisp]]-loadable projects within one command
+- Supports path, (arbitrary) query, and (arbitrary) header parameters
+- Each system has dynamic variables for changing default server, query, headers,
+  authentication, cookie, output
+- Multiple function alias options (operation-id, path, summary, description)
+- Supported file formats / inputs: [[https://www.json.org][JSON]], [[https://yaml.org/][YAML]], [[https://url.spec.whatwg.org/][URL]], local file, project-id on [[https://apis.guru/][apis.guru]].
+- Conversion of an OpenAPI spec into CLOS object -> explore API within inspector
+- Conversion of OpenAPI-2.0 or YAML files to OpenAPI-3.0 JSON with [[https://converter.swagger.io/][swagger
+  converter]] (network connection required)
+** Codeberg
+The main repository of this library is hosted on [[https://codeberg.org/kilianmh/openapi-generator.git][Codeberg]].
+If you are viewing this anywhere else, it is just a mirror. Please use the
+[[https://codeberg.org/kilianmh/openapi-generator][Codeberg repository]] for collaboration (issues, pull requests, discussions,
+...).
+Thank you!
+
+** Warning
+- This software is still ALPHA quality. The APIs will be likely to change.
+  
+- Make sure to review the openapi specification file if it is from an untrusted
+  source or environment file before using openapi-generator, especially before
+  using the generated system. This is to mitigate potential security risks such
+  as code injection. For security vulnerabilities, please contact the maintainer of the library.
+
+** Quickstart
+Load openapi-generator from [[https://ultralisp.org/][Ultralisp]] via ql:quickload, or from local project
+folder via asdf:load-system
+
+#+begin_src lisp
+  (ql:quickload :openapi-generator)
+#+end_src
+
+Then put this in the REPL:
+
+#+begin_src lisp
+  (openapi-generator:make-openapi-client
+   "codeberg"
+   :url "https://codeberg.org/swagger.v1.json"
+   :server "https://codeberg.org/api/v1"
+   :system-directory :library)
+#+end_src
+
+This creates a client system to access the
+[[https://codeberg.org/api/swagger][codeberg api]] in the projects folder
+within openapi-generator library and loads it (by default). Now you can use e.g.:
+
+#+begin_src lisp
+  (codeberg:repo-get "kilianmh" "openapi-generator")
+#+end_src
+
+** Interface
+*** parse-openapi
+#+begin_src lisp
+  parse-openapi (name &key url collection-id source-directory content)
+#+end_src
+
+Parse an OpenAPI to a openapi class object. This might be useful for exploration
+of the API specification, or you can pass it to the make-openapi-client
+function.
+
+**** name
+name of the openapi-file which is opened/created
+**** url
+url to a openapi specification file
+**** collection-id
+apis-guru-id from [[https://apis.guru/][apis.guru]]
+**** source-directory
+source-directory (name will be inserted from name parameter)
+**** content
+openapi spec file string
+*** make-openapi-client
+#+begin_src lisp
+    make-openapi-client (system-name
+                         &key
+                         (server *server*) (output *output*) (query *query*) (headers *headers*)
+                         (authorization *authorization*) (cookie *cookie*)
+                         (alias (list :operation-id)) (system-directory :temporary) (load-system t)
+                         openapi (api-name system-name) url source-directory collection-id
+                         content)
+#+end_src
+
+**** parameters
+***** input same as parse-openapi
+***** openapi
+openapi-object
+***** api-name
+Name of file in openapi-generator/data folder
+***** system-directory
+Options:
+- pathname-object -> pathname pathname-object + system-name
+Keyword-options
+- :temporary -> default, (uiop:temporary-directory)
+- :library  -> openapi-generator/projects
+- :local-projects -> ql:*local-project-directories* openapi-generator/
+***** output
+default: :hash-table, alternative: :json.
+***** server
+set default server variable in system (e.g. if server not/incorrect in spec
+file)
+***** query
+set default query parameters
+***** headers
+set default headers (e.g. for api-tokens that have to be supplied often)
+***** authorization
+set default authorization value
+***** cookie
+set default cookie value
+***** Alias
+system exported functions: (multiple options possible):
+- :operation-id (param-cased operation-id) (default if there is are operation-id specified)
+- :summary (param-cased summary)
+- :description (param-case description)
+- :path (operation-type + path) (default if no operation-id specified)
+***** load-system
+Load system after making it (default: t)
+**** examples
+***** content
+#+begin_src lisp
+  (openapi-generator:make-openapi-client
+   "stacks"
+   :url "https://raw.githubusercontent.com/hirosystems/stacks-blockchain-api/gh-pages/openapi.resolved.yaml")
+#+end_src
+#+begin_src lisp
+  ;; make-openapi-client stacks as described in quickstart
+  (stacks:call-read-only-function
+   "SP187Y7NRSG3T9Z9WTSWNEN3XRV1YSJWS81C7JKV7" "imaginary-friends-zebras" "get-token-uri"
+   :content
+   "{
+      \"sender\": \"STM9EQRAB3QAKF8NKTP15WJT7VHH4EWG3DJB4W29\",
+      \"arguments\": 
+      [
+          \"0x0100000000000000000000000000000095\"
+      ]
+   }")
+#+end_src
+***** header
+#+begin_src lisp
+  ;; This example only works if you generate a valid apikey and insert it after Bearer
+  ;; in the headers list
+  (openapi-generator:make-openapi-client
+   "openai"
+   :url "https://raw.githubusercontent.com/openai/openai-openapi/master/openapi.yaml"
+   :headers (list (cons "authorization" "Bearer <YOUR-API-KEY>"))
+   :system-directory :temporary)
+#+end_src
+You have to first open an account and generate an api-key for using this api.
+If you supply value of authorization during client-creation, it will be saved
+directly in the file as variable. Beware and dont use this if in an untrusted
+environment.
+#+begin_src lisp
+  ;; only working with valid API-KEY
+  (openai:retrieve-engine "davinci")
+#+end_src
+You can also add add :authorization "Bearer <YOUR-API-KEY>" to each function
+call. This is equivalent to adding it to the headers.
+#+begin_src lisp
+  (openai:list-engines
+  :authorization "Bearer <YOUR-API-KEY>" ;; -> if not supplied during system generation
+  )
+#+end_src
+***** collection-id
+#+begin_src lisp
+  (openapi-generator:make-openapi-client "opendatasoft"
+                                         :collection-id "opendatasoft.com"
+                                         :system-directory :local-projects)
+#+end_src
+This creates the api for opendatasoft database in your quicklisp local-projects folder
+by accessing apis.guru for the URL. An use example:
+#+begin_src lisp
+  (opendatasoft:get-dataset "geonames-all-cities-with-a-population-1000")
+#+end_src
+***** from openapi data folder
+Each time you load an api, a loadable json is stored in the openapi-generator/data
+folder. ELse you can put a file in the this folder manually.
+#+begin_src lisp
+  ;; file with that name has to be present in the folder openapi-generator/data
+  (openapi-generator:make-openapi-client "codeberg")
+#+end_src
+*** convert-to-openapi-3
+#+begin_src lisp
+  convert-to-openapi-3 (&key url content pathname (content-type "json"))
+#+end_src
+Conversion from Openapi 2.0 YAML/JSON to OpenAPI 3.0 JSON.
+#+begin_src lisp
+  (openapi-generator:convert-to-openapi-3 :url "https://converter.swagger.io/api/openapi.json")
+#+end_src
+** Possible Future Improvements
+- modularize the project (e.g. separate systems for parsing, function
+  generation, system generation)
+- extensibility with custom classes
+- Auto-generation of request body classes for parsing them into CLOS objects
+- Response validation & access functions for response content
+- websocket support
+- integrate JSON-Schema to create an expanded API-Object
+- generate client from command line interface (CLI)
+- integration in workflows (CI/CD, etc.)
+- more regression tests
+- support multiple implementations
+- offline openapi-spec conversion
+- integrate other api standards: json:api, raml, postman collection, har, OData,
+  GraphQL, gRPC
+  
+** License on generated code
+Generated code is intentionally not subject to this project license.
+Code generated  shall be considered AS IS and owned by the user.
+There are no warranties--expressed or implied--for generated code.
+You can do what you wish with it, and once generated, the code is your
+responsibility and subject to the licensing terms that you deem appropriate.
+
+** Call for collaboration
+Feel free to contribute by opening issues, pull request, feature requests etc.
+Your help is much appreciated.
+
+** Copyright
+
+(C) 2023 Kilian M. Haemmerle (kilian.haemmerle@protonmail.com)
+
+** License
+
+Licensed under the AGPLv3+ License.
