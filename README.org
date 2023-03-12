@@ -4,7 +4,7 @@ OpenAPI-generator is an api client system generator.
 
 ** Features
 - Generation of OpenAPI [[https://asdf.common-lisp.dev/][ASDF]]/[[https://www.quicklisp.org][Quicklisp]]-loadable projects within one command
-- Supports path, (arbitrary) query, and (arbitrary) header parameters
+- Support for path, (arbitrary) query, (arbitrary) header, (json) content parameters
 - Each system has dynamic variables for changing default server, query, headers,
   authentication, cookie, output
 - Multiple function alias options (operation-id, path, summary, description)
