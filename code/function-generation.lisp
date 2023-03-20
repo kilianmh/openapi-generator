@@ -106,13 +106,13 @@
            (file-type (substring (- uri-path-length 4)
                                  uri-path-length
                                  uri-path)))
-      (string-case file-type
-        ("yaml"
+      (case-using (function string-equal) file-type
+        (("yml" "yaml")
          "yaml")
         ("json"
          "json")
         (otherwise
-         (warn "~A is the wrong file type. Acceptable values are yaml or json." file-type))))))
+         (warn "~A is the wrong file type. Acceptable values are yaml, yml, or json." file-type))))))
 
 (defgeneric function-name (path operation-type &key param-case)
   (:documentation "Generate unique symbole name for given operation-type and path")

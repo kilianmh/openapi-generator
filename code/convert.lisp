@@ -27,9 +27,11 @@
   (when (and url content pathname)
     (error "You can only supply either url or content, not both simultaneously."))
   (let ((content-type
-          (string-case content-type
-                       ("json" "application/json")
-                       ("yaml" "application/yaml"))))
+          (case-using (function string-equal) content-type
+            ("json"
+             "application/json")
+            (("yaml" "yml")
+             "application/yaml"))))
     (cond (url
            (convert-by-url url))
           (content

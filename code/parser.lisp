@@ -35,18 +35,20 @@ Supported are: url / apis-guru / path / name (in openapi-generator/data folder)"
     (to-file (get-data-file file-name)
              (funcall (function parse-url) nil url)))
   (:method ((file-name null) (url string))
-    (string-case (substring (- (length url) 4)
-                            (length url)
-                            url)
-      ("yaml"
-       (convert-to-openapi-3 :url url))
-      ("json"
-       (let ((result
-               (dex:get url)))
-         (if (eql (get-openapi-version result)
-                  (quote openapi-2.0))
-             (convert-to-openapi-3 :url url)
-             result))))))
+    (let ((url-ending
+            (substring (- (length url) 4)
+                       (length url)
+                       url)))
+      (case-using (function string-equal) url-ending
+        (("yaml" ".yml")
+         (convert-to-openapi-3 :url url))
+        ("json"
+         (let ((result
+                 (dex:get url)))
+           (if (eql (get-openapi-version result)
+                    (quote openapi-2.0))
+               (convert-to-openapi-3 :url url)
+               result)))))))
 
 (defgeneric parse-string (file-name file)
   (:documentation "Safe string to file in local folder")
@@ -120,6 +122,10 @@ You should mostly submit a file-name, and either ")
                           ((uiop:file-exists-p (get-data-file name :type "yaml"))
                            (str:to-file (get-data-file name)
                                         (convert-to-openapi-3 :pathname (get-data-file name :type "yaml")
+                                                              :content-type "yaml")))
+                          ((uiop:file-exists-p (get-data-file name :type "yml"))
+                           (str:to-file (get-data-file name)
+                                        (convert-to-openapi-3 :pathname (get-data-file name :type "yml")
                                                               :content-type "yaml")))
                           (t
                            (error (concat "There is no " name " json/yaml in the openapi-generator/data folder
