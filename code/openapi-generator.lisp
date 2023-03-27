@@ -196,8 +196,6 @@
                           (trim (concat (namestring (default-temporary-directory))
                                         "openapi-generator/")
                                 :char-bag "/"))))
-         (:local-projects
-          (ensure-directories-exist constant-local-projects-directory))
          (:library
           (ensure-directories-exist constant-projects-directory))))
       (null

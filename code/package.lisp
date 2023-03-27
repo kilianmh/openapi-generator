@@ -3,8 +3,6 @@
   (:shadow #:get #:type #:continue #:delete #:trace #:format #:search #:not)
   (:shadowing-import-from #:closer-mop
                           #:defgeneric #:slot-definition-name)
-  (:import-from #:quicklisp
-                #:*local-project-directories*)
   (:import-from #:uiop
                 #:default-temporary-directory #:delete-file-if-exists
                 #:read-file-string #:file-exists-p #:ensure-pathname)

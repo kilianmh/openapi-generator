@@ -96,7 +96,6 @@ Options:
 Keyword-options
 - :temporary -> default, (uiop:temporary-directory)
 - :library  -> openapi-generator/projects
-- :local-projects -> ql:*local-project-directories* openapi-generator/
 ***** output
 default: :hash-table, alternative: :json.
 ***** server
@@ -166,11 +165,10 @@ call. This is equivalent to adding it to the headers.
 ***** collection-id
 #+begin_src lisp
   (openapi-generator:make-openapi-client "opendatasoft"
-                                         :collection-id "opendatasoft.com"
-                                         :system-directory :local-projects)
+                                         :collection-id "opendatasoft.com")
 #+end_src
-This creates the api for opendatasoft database in your quicklisp local-projects folder
-by accessing apis.guru for the URL. An use example:
+This creates the api client for opendatasoft by accessing apis.guru forthe URL.
+Here an example query:
 #+begin_src lisp
   (opendatasoft:get-dataset "geonames-all-cities-with-a-population-1000")
 #+end_src
