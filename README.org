@@ -63,6 +63,10 @@ Parse an OpenAPI to a openapi class object. This might be useful for exploration
 of the API specification, or you can pass it to the make-openapi-client
 function.
 
+#+begin_src lisp
+  (openapi-generator:parse-openapi "codeberg" :url "https://codeberg.org/swagger.v1.json")
+#+end_src
+
 **** name
 name of the openapi-file which is opened/created
 **** url
