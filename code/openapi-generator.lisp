@@ -122,6 +122,8 @@
                      `(defparameter ,(intern "*QUERY*") ',query)))))
 
 (defgeneric check-api-slots (api list)
+  (:documentation "Make sure that the function (alias) can be generated.
+Prefered alias source is operation-id. Last resort option is path.")
   (:method ((api openapi) (list list))
     (flet ((check-path-slot (api slot)
              (maphash (function (lambda (path path-object)
@@ -184,6 +186,7 @@
              (cl:format nil "~S" `(setf ,@description-alias)))))))))
 
 (defgeneric ensure-project-directory (directory)
+  (:documentation "Makes sure that the directory is existing before the template is generated.")
   (:method (directory)
     (typecase directory
       (pathname
@@ -206,6 +209,10 @@
                               server (output :hash-table) headers authorization cookie
                               (alias (list :operation-id)) (system-directory :library) (load-system t)
                               openapi (api-name system-name) url source-directory collection-id content)
+  "Creates Openapi client by combining a project template with generated code.
+Source options are url, source-directory, collection-id, or openapi (openapi class instance).
+The options server, output, headers, authorization, cookie, content are stored in the library code
+as dynamic parameters.."
   (let* ((project-pathname
            (make-pathname :directory (concat (trim-left
                                               (directory-namestring (ensure-project-directory system-directory))
