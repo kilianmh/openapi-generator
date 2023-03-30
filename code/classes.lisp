@@ -261,7 +261,7 @@ The Responses Object MUST contain at least one response code, and if only one re
                         :documentation "Example of the parameter’s potential value. The example SHOULD match the specified schema and encoding properties if present. The example field is mutually exclusive of the examples field. Furthermore, if referencing a schema that contains an example, the example value SHALL override the example provided by the schema. To represent examples of media types that cannot naturally be represented in JSON or YAML, a string value can contain the example with escaping where necessary.")
              ("examples" (:hash-table example)
                          :documentation "Examples of the parameter’s potential value. Each example SHOULD contain a value in the correct format as specified in the parameter encoding. The examples field is mutually exclusive of the example field. Furthermore, if referencing a schema that contains an example, the examples value SHALL override the example provided by the schema.")
-             ("content" (:hash-table content)
+             ("content" (:hash-table media-type)
                         :documentation "A map containing the representations for the parameter. The key is the media type and the value describes it. The map MUST only contain one entry.")
              ("$ref" :string))
             (:documentation "Describes a single operation parameter.
