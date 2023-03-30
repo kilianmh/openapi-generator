@@ -15,14 +15,15 @@
             :json-key ,json-key
             :accessor ,slot-symbol)))))
 
-(defmacro json-class (name direct-superclasses slots)
+(defmacro json-class (name direct-superclasses direct-slots &rest options)
   `(defclass ,name ,direct-superclasses
      (,@(mapcar (function (lambda (slot)
                   (expand-slot (first slot)
                                (second slot)
                                (cddr slot))))
-                slots))
-     (:metaclass json-mop:json-serializable-class)))
+                direct-slots))
+     ,@(append (list (list :metaclass (quote json-mop:json-serializable-class)))
+        options)))
 
 (defgeneric concat-strings (list)
   (:documentation "Concatenates strings together and breaks when other element comes")
