@@ -54,16 +54,6 @@
                  t)))
              alist))
 
-#|
-(defun remove-empty-values (alist)
-  "Remove empty values from alist (used at run time)"
-  (let ((new-alist nil))
-    (mapc (function (lambda (list)
-	    (unless (proper-list-p list)
-	      (push list new-alist))))
-	  alist)
-    new-alist))
-|#
 (defun one-item (name)
   "Intern the item in the package active during execution of this function"
   `(cons ,name
