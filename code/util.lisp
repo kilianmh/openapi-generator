@@ -83,3 +83,16 @@
     (when (or (string-equal "https" scheme)
               (string-equal "http" scheme))
       t)))
+
+(defmethod hash-copy-recursive ((hash hash-table))
+  "Inspired by cl-hash-util:hash-copy, but performs a recursive (deep) hash-table copy
+  which replaces all internal hash-tables with copies.
+  This is needed to avoid looping when working with circular json-pointers."
+  (let ((new-hash (make-hash-table :test (function equal) :size (hash-table-count hash))))
+    (loop for k being the hash-keys of hash
+          for v being the hash-values of hash do
+            (setf (gethash k new-hash)
+                  (if (typep v (quote hash-table))
+                      (funcall (function hash-copy-recursive) v)
+                      v)))
+    new-hash))
