@@ -6,7 +6,8 @@
   :license "AGPLv3-later"
   :depends-on (#:str #:cl-hash-util #:cl-semver #:pathname-utils
                #:json-mop #:yason #:com.inuoe.jzon #:cl-project
-               #:listopia #:alexandria #:serapeum #:quri #:dexador)
+               #:listopia #:alexandria #:serapeum #:quri #:dexador
+               #:cl-json-pointer)
   :pathname "code/"
   :serial t
   :components ((:file "package")

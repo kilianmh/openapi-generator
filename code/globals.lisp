@@ -8,3 +8,6 @@
     (system-relative-pathname "openapi-generator" "projects/")
   :test (function equal)
   :documentation "Projects directory within libraries data folder")
+
+(defvar *dereference* t
+  "This variable influences whether the openapi document will be derefenced or not.")

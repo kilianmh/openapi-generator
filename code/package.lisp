@@ -40,6 +40,10 @@
   (:import-from #:semver
                 #:read-version-from-string
                 #:version= #:version>= #:version<=)
+  (:import-from #:cl-json-pointer
+                #:get-by-json-pointer)
+  (:import-from #:cl-hash-util
+                #:hash-get)
   (:export #:parse-openapi
            #:make-openapi-client
            #:convert-to-openapi-3

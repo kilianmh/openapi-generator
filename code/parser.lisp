@@ -91,10 +91,61 @@ Supported are: url / apis-guru / path / name (in openapi-generator/data folder)"
   (:method ((file-name string) (apis-guru-id string))
     (parse-url file-name (apis-guru-url apis-guru-id))))
 
-(defgeneric parse-openapi (name &key url source-directory collection-id content)
+(defmethod dereference ((table hash-table))
+  "Dereference all references recursively.
+  Exit recursion & warn when circular pointer detected"
+  (let ((dereferenced-table (hash-copy-recursive table))
+        (circular-pointer nil))
+    (labels ((map-vector (vec used-pointer path)
+               (let ((counter -1))
+                 (mapc (function (lambda (element)
+                         (declare (ignore element))
+                         (funcall (function %dereference)
+                                  :used-pointer used-pointer
+                                  :path (append path (list (incf counter))))))
+                       (coerce vec 'list))))
+             (map-ht (ht used-pointer path)
+               (maphash (function (lambda (key value)
+                          (declare (ignore value))
+                          (funcall (function %dereference)
+                                   :path (append path (list key))
+                                   :used-pointer used-pointer)))
+                        ht))
+             (%dereference (&key path used-pointer)
+               (let ((entry
+                       (if path (hash-get dereferenced-table path)
+                           dereferenced-table)))
+                 (typecase entry
+                   (hash-table
+                    (let ((pointer (gethash "$ref" entry)))
+                      (if (and pointer (stringp pointer))
+                          (if (member pointer used-pointer :test (function string=))
+                              (unless (member pointer circular-pointer :test (function string=))
+                                (push pointer circular-pointer)
+                                (warn "circular pointer detected in ~A" pointer))
+                              (let ((pointer-value
+                                      (get-by-json-pointer dereferenced-table pointer)))
+                                (etypecase pointer-value
+                                  (null nil)
+                                  (hash-table
+                                   (map-ht (setf (hash-get dereferenced-table path)
+                                                 (hash-copy-recursive pointer-value))
+                                           (cons pointer used-pointer) path))
+                                  (vector
+                                   (map-vector (setf (hash-get dereferenced-table path)
+                                                     (copy-seq pointer-value))
+                                               (cons pointer used-pointer)
+                                               path)))))
+                          (map-ht entry used-pointer path))))
+                   (vector
+                    (map-vector entry used-pointer path))))))
+      (funcall (function %dereference)))
+    dereferenced-table))
+
+(defgeneric parse-openapi (name &key url source-directory collection-id content dereference)
   (:documentation "Parse json/yaml from a file or uri into openapi class instance
 You should mostly submit a file-name, and either ")
-  (:method ((name string) &key url source-directory collection-id content)
+  (:method ((name string) &key url source-directory collection-id content (dereference *dereference*))
     (let* ((file-pathname
              (make-pathname :directory (trim (directory-namestring constant-data-directory)
                                              :char-bag "/")
@@ -130,4 +181,12 @@ You should mostly submit a file-name, and either ")
                           (t
                            (error (concat "There is no " name " json/yaml in the openapi-generator/data folder
 Alternativeyl you can supply one of the keyword parameters (source-directory, apis-guru-id, file-content, url)"))))))))
-      (json-to-clos result (get-openapi-version result)))))
+      (json-to-clos (if dereference
+                        (dereference
+                         (yason:parse result
+                                      :object-as :hash-table
+                                      :json-arrays-as-vectors t
+                                      :json-booleans-as-symbols t
+                                      :json-nulls-as-keyword t))
+                        result)
+                    (get-openapi-version result)))))

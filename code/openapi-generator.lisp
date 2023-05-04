@@ -208,7 +208,8 @@ Prefered alias source is operation-id. Last resort option is path.")
                             &key
                               server (output :hash-table) headers authorization cookie
                               (alias (list :operation-id)) (system-directory :library) (load-system t)
-                              openapi (api-name system-name) url source-directory collection-id content)
+                              openapi (api-name system-name) url source-directory collection-id content
+                              (dereference *dereference*))
   "Creates Openapi client by combining a project template with generated code.
 Source options are url, source-directory, collection-id, or openapi (openapi class instance).
 The options server, output, headers, authorization, cookie, content are stored in the library code
@@ -242,6 +243,7 @@ as dynamic parameters.."
                            :url url
                            :source-directory source-directory
                            :collection-id collection-id
+                           :dereference dereference
                            :content content))
         (intern (upcase system-name))
         :headers headers :authorization authorization :cookie cookie
