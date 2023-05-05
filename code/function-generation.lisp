@@ -1,16 +1,5 @@
 (cl:in-package #:openapi-generator)
 
-(defgeneric resolve-reference (api reference-string)
-  (:documentation "Resolve relative references.")
-  (:method ((api openapi) (reference-string string))
-    (let ((reference-list
-            (cdr (split "/" reference-string))))
-      (gethash (third reference-list)
-               (slot-value (slot-value api (intern (upcase (first reference-list))
-                                                   "OPENAPI-GENERATOR"))
-                           (intern (upcase (second reference-list))
-                                   "OPENAPI-GENERATOR"))))))
-
 (defgeneric get-primary-uri (api)
   (:documentation "Return first server uri")
   (:method ((api openapi))
@@ -41,9 +30,9 @@
                                      first-url))
                     first-url))))))))))
 
-(defgeneric collect-parameters (api path operation)
+(defgeneric collect-parameters (path operation)
   (:documentation "Collect all parameters belong to an api a path and operation.")
-  (:method ((api openapi) (path path) (operation symbol))
+  (:method ((path path) (operation symbol))
     (let* ((path-parameters
              (slot-value-safe path (quote parameters)))
            (operation-parameters
@@ -53,15 +42,6 @@
                                    path-parameters)
                                  (when operation-parameters
                                    operation-parameters))))
-           (parameters-with-references
-             (mapcar (function (lambda (parameter)
-                       (let ((parameter-ref
-                               (slot-value-safe parameter (quote ref))))
-                         (cond ((slot-boundp parameter (quote name))
-                                parameter)
-                               (parameter-ref
-                                (resolve-reference api parameter-ref))))))
-                     parameters-with-duplicates))
            (parameters-without-duplicates
              (remove nil
                      (let ((names-list
@@ -72,7 +52,7 @@
                                    (unless (member name names-list :test (function string-equal))
                                      (push name names-list)
                                      parameter))))
-                               parameters-with-references)))))
+                               parameters-with-duplicates)))))
       parameters-without-duplicates)))
 
 (defgeneric get-parameter-type (type parameters)
@@ -180,17 +160,15 @@
              (when description
                (concat "Description: " description)))))))
 
-(defgeneric schema-or-ref (api parameter)
-  (:documentation "return the type from schema or referenced schema")
-  (:method ((api openapi) (parameter parameter))
+(defgeneric parameter-schema-type (parameter)
+  (:documentation "Return the parameter type from schema")
+  (:method ((parameter parameter))
     (let* ((schema
              (slot-value-safe parameter (quote schema)))
            (schema-type
              (slot-value-safe schema (quote type)))
            (schema-one-of
-             (slot-value-safe schema (quote one-of)))
-           (schema-ref
-             (slot-value-safe schema (quote ref))))
+             (slot-value-safe schema (quote one-of))))
       (cond (schema-type
              (typecase schema-type
                (string (intern (upcase schema-type)))
@@ -202,33 +180,24 @@
              (cons (quote cl:or)
                    (mapcar (function (lambda (items)
                              (intern (upcase (type items)))))
-                           (coerce schema-one-of (quote list)))))
-            (schema-ref
-             (let ((type
-                     (type (resolve-reference api schema-ref))))
-               (typecase type
-                 (string (intern (upcase type)))
-                 (vector (append (list (quote cl:or))
-                                 (mapcar (function (lambda (item)
-                                           (intern (upcase item))))
-                                         (coerce type 'list)))))))))))
+                           (coerce schema-one-of (quote list)))))))))
 
-(defgeneric assure-required (api required-parameters)
+(defgeneric assure-required (required-parameters)
   (:documentation "Generate code for run-time type checking of required arguments")
-  (:method ((api openapi) (required-parameter parameter))
+  (:method ((required-parameter parameter))
     `(assuref ,(intern (upcase (param-case (name required-parameter))))
-              ,(schema-or-ref api required-parameter)))
-  (:method ((api openapi) (required-parameters list))
+              ,(parameter-schema-type required-parameter)))
+  (:method ((required-parameters list))
     (mapcar (function (lambda (parameter)
-              (funcall (function assure-required) api parameter)))
+              (funcall (function assure-required) parameter)))
             required-parameters)))
 
-(defgeneric assure-optional (api optional-parameter)
+(defgeneric assure-optional (optional-parameter)
   (:documentation "Generate code for run-time type checking of optional arguments.
 This only happens, if arguments supplied.")
-  (:method ((api openapi) (optional-parameter parameter))
+  (:method ((optional-parameter parameter))
     (let ((type
-            (schema-or-ref api optional-parameter))
+            (parameter-schema-type optional-parameter))
           (parameter-symbol
             (intern (upcase (param-case (name optional-parameter))))))
       (when (and type
@@ -237,9 +206,9 @@ This only happens, if arguments supplied.")
            (assuref
             ,parameter-symbol
             ,type)))))
-  (:method ((api openapi) (optional-parameter list))
+  (:method ((optional-parameter list))
     (mapcar (function (lambda (parameter)
-              (funcall (function assure-optional) api parameter)))
+              (funcall (function assure-optional) parameter)))
             optional-parameter)))
 
 (defgeneric path-list (uri-path path)
@@ -263,10 +232,10 @@ This only happens, if arguments supplied.")
   (:method ((uri-path null) (path string))
     (path-list "" path)))
 
-(defgeneric path-list-stringified (api path-list parameter-list)
+(defgeneric path-list-stringified (path-list parameter-list)
   (:documentation "Get a list where symbols that will have a value of type strings are untouched, while
 symbols will have numbers values are converted into strings at run time.")
-  (:method ((api openapi) (path-list list) (parameter-list list))
+  (:method ((path-list list) (parameter-list list))
     (flet ((get-parameter-by-name (name parameters)
              (remove nil
                      (mapc (function (lambda (parameter)
@@ -279,9 +248,9 @@ symbols will have numbers values are converted into strings at run time.")
                      (emptyp item))))
                  (mapcar (function (lambda (item)
                            (typecase item
-                             (symbol (case (schema-or-ref api
-                                                          (get-parameter-by-name (symbol-name item)
-                                                                                 parameter-list))
+                             (symbol (case (parameter-schema-type
+                                            (get-parameter-by-name (symbol-name item)
+                                                                   parameter-list))
                                        ((number integer)
                                         `(write-to-string ,item))
                                        (otherwise
@@ -289,13 +258,12 @@ symbols will have numbers values are converted into strings at run time.")
                              (string item))))
                          path-list)))))
 
-(defgeneric get-path (api path parameters primary-uri)
+(defgeneric get-path (path parameters primary-uri)
   (:documentation "generate path list")
-  (:method ((api openapi) (path string) (parameters list) (primary-uri string))
+  (:method ((path string) (parameters list) (primary-uri string))
     (let ((path-list
             (concat-strings
-             (path-list-stringified api
-                                    (path-list (uri-path (uri primary-uri))
+             (path-list-stringified (path-list (uri-path (uri primary-uri))
                                                path)
                                     parameters))))
       (case (length path-list)
@@ -357,18 +325,18 @@ symbols will have numbers values are converted into strings at run time.")
   (:method ((api openapi) (path string) (operation-type symbol))
     (let* ((path-object      (gethash path (paths api)))
            (operation-object (slot-value path-object operation-type))
-           (all-parameters   (collect-parameters api path-object operation-type))
+           (all-parameters   (collect-parameters path-object operation-type))
            (required-params  (get-required-parameter all-parameters :required t))
            (optional-params  (get-required-parameter all-parameters :required nil))
            (lambda-list      (get-lambda-list required-params optional-params operation-object))
 	   (description      (get-description operation-object))
            (primary-uri      (get-primary-uri api))
-           (uri-path         (get-path api path all-parameters primary-uri))
+           (uri-path         (get-path path all-parameters primary-uri))
            (uri-query        (get-query all-parameters)))
       `(defun ,(intern (function-name path operation-type :param-case nil)) ,lambda-list
 	 ,description
-         ,@(assure-required api required-params)
-         ,@(assure-optional api optional-params)
+         ,@(assure-required required-params)
+         ,@(assure-optional optional-params)
          (let* ((,(intern "SERVER-URI")
                   (uri (or ,(intern "SERVER")
                            ,primary-uri)))
