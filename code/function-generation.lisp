@@ -65,18 +65,26 @@
                         parameter)))
                     parameters))))
 
-(defgeneric get-required-parameter (parameters &key required)
-  (:documentation "Get required or optional parameters for given api path operation")
-  (:method ((parameters list) &key required)
-    (remove nil
-            (mapcar (function (lambda (parameter)
-                      (when (cond ((eql required t)
-                                   (eql (quote true) (slot-value-safe parameter (quote required))))
-                                  ((null required)
-                                   (null (eql (quote true)
-                                              (slot-value-safe parameter (quote required))))))
-                        parameter)))
-                    parameters))))
+(defmethod get-required-parameter ((parameters list))
+  "Collect required parameter from list of parameters"
+  (let ((required-parameter
+          nil))
+    (mapc (function (lambda (parameter)
+            (when (eql (quote true) (slot-value-safe parameter (quote required)))
+              (setf required-parameter (append required-parameter (list parameter))))))
+          parameters)
+    required-parameter))
+
+(defmethod get-optional-parameter ((parameters list))
+  "Collect optional parameter from list of parameters"
+  (let ((optional-parameter
+          nil))
+    (mapc (function (lambda (parameter)
+            (unless (eql (quote true) (slot-value-safe parameter (quote required)))
+              (setf optional-parameter (append optional-parameter (list parameter))))))
+          parameters)
+    optional-parameter))
+
 
 (defgeneric get-uri-type (uri)
   (:documentation "")
@@ -326,8 +334,8 @@ symbols will have numbers values are converted into strings at run time.")
     (let* ((path-object      (gethash path (paths api)))
            (operation-object (slot-value path-object operation-type))
            (all-parameters   (collect-parameters path-object operation-type))
-           (required-params  (get-required-parameter all-parameters :required t))
-           (optional-params  (get-required-parameter all-parameters :required nil))
+           (required-params  (get-required-parameter all-parameters))
+           (optional-params  (get-optional-parameter all-parameters))
            (lambda-list      (get-lambda-list required-params optional-params operation-object))
 	   (description      (get-description operation-object))
            (primary-uri      (get-primary-uri api))
