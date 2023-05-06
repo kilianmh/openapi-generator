@@ -56,7 +56,7 @@ within openapi-generator library and loads it (by default). Now you can use e.g.
 ** Interface
 *** parse-openapi
 #+begin_src lisp
-  parse-openapi (name &key url collection-id source-directory content)
+  parse-openapi (name &key url collection-id source-directory content (dereference *dereference*))
 #+end_src
 
 Parse an OpenAPI to a openapi class object. This might be useful for exploration
@@ -77,6 +77,10 @@ apis-guru-id from [[https://apis.guru/][apis.guru]]
 source-directory (name will be inserted from name parameter)
 **** content
 openapi spec file string
+**** dereference
+If set to true, pointers within openapi spec are dereferenced before parsing into
+openapi CLOS object. This improves discoverability for humans (and algorithms).
+Can be turned off for faster parsing.
 *** make-openapi-client
 #+begin_src lisp
     make-openapi-client (system-name
@@ -85,7 +89,7 @@ openapi spec file string
                          (authorization *authorization*) (cookie *cookie*)
                          (alias (list :operation-id)) (system-directory :temporary) (load-system t)
                          openapi (api-name system-name) url source-directory collection-id
-                         content)
+                         content (dereference *dereference*))
 #+end_src
 
 **** parameters
@@ -121,6 +125,10 @@ system exported functions: (multiple options possible):
 - :path (operation-type + path) (default if no operation-id specified)
 ***** load-system
 Load system after making it (default: t)
+***** dereference
+If set to true (default), then the openapi spec is fully dereferenced before parsing into
+the CLOS object. This might be necessary to properly generate the system, e.g.
+if pointers are used for schemas. Can be turned off for faster system generation.
 **** examples
 ***** content
 #+begin_src lisp
@@ -191,6 +199,10 @@ Conversion from Openapi 2.0 YAML/JSON to OpenAPI 3.0 JSON.
 #+begin_src lisp
   (openapi-generator:convert-to-openapi-3 :url "https://converter.swagger.io/api/openapi.json")
 #+end_src
+*** **dereference**
+Global variable that determines whether openapi spec is dereferenced before
+parsing into a CLOS object. Set to true by default. Can be overwritten in each
+call to parse-openapi / make-openapi-client.
 ** Possible Future Improvements
 - modularize the project (e.g. separate systems for parsing, function
   generation, system generation)
