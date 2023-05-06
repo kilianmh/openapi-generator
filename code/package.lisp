@@ -46,5 +46,6 @@
                 #:hash-get)
   (:export #:parse-openapi
            #:make-openapi-client
+           #:*dereference*
            #:convert-to-openapi-3
            #:remove-empty-values))
