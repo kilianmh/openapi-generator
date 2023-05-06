@@ -142,6 +142,19 @@ Supported are: url / apis-guru / path / name (in openapi-generator/data folder)"
       (funcall (function %dereference)))
     dereferenced-table))
 
+(defmethod dereference ((openapi string))
+  "Parses (openapi json) string in same style as in JSON-MOP"
+  (funcall (function dereference)
+           (yason:parse openapi
+                        :object-as :hash-table
+                        :json-arrays-as-vectors t
+                        :json-booleans-as-symbols t
+                        :json-nulls-as-keyword t)))
+
+(defmethod dereference ((openapi pathname))
+  "Reads file to string from path."
+  (funcall (function dereference) (from-file openapi)))
+
 (defgeneric parse-openapi (name &key url source-directory collection-id content dereference)
   (:documentation "Parse json/yaml from a file or uri into openapi class instance
 You should mostly submit a file-name, and either ")
