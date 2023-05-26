@@ -147,15 +147,15 @@ Holds the relative paths to the individual endpoints and their operations. The p
                         :documentation "An optional, string summary, intended to apply to all operations in this path.")
              ("description" :string
                             :documentation "An optional, string description, intended to apply to all operations in this path. CommonMark syntax MAY be used for rich text representation.")
-             ("get" operation
+             ("get" operation :reader path-get
                     :documentation "A definition of a GET operation on this path.")
              ("head" operation
                      :documentation "A definition of a HEAD operation on this path.")
              ("options" operation
                         :documentation "A definition of a OPTIONS operation on this path.")
-             ("trace" operation
+             ("trace" operation :reader path-trace
                       :documentation "A definition of a TRACE operation on this path.")
-             ("delete" operation
+             ("delete" operation :reader path-delete
                        :documentation "A definition of a DELETE operation on this path.")
              ("put" operation
                     :documentation "A definition of a PUT operation on this path.")
@@ -172,11 +172,11 @@ Holds the relative paths to the individual endpoints and their operations. The p
 (defmethod print-object ((object path) stream)
   (print-unreadable-object (object stream)
     (cl:format stream "~A"
-               (str:unwords (mapcar (function (lambda (operation-type)
-                                      (concat "(" (downcase (symbol-name operation-type)) " "
-                                              (param-case (operation-id (slot-value object operation-type)))
-                                              ")")))
-                                    (collect-path-types object))))))
+               (remove nil
+                       (mapcar (function (lambda (operation-type)
+                                 (when (slot-boundp object operation-type)
+                                   operation-type)))
+                               (moptilities:direct-slot-names 'path))))))
 
 (json-class operation nil
             (("tags" (:list :string)
@@ -375,14 +375,29 @@ For computing links, and providing instructions to execute them, a runtime expre
 A linked operation MUST be identified using either an operationRef or operationId. In the case of an operationId, it MUST be unique and resolved in the scope of the OAS document. Because of the potential for name clashes, the operationRef syntax is preferred for OpenAPI documents with external references."))
 
 (json-class header nil
-            (("description" :string)
-             ("required"    :any) ;; bool
-             ("deprecated"  :any) ;; bool
-             ("schema"      schema)
-             ("content"     :content)
-             ("style"       :string)
-             ("explode"     :any)  ;; bool
-             ("$ref"        :string))
+            (("description" :string
+                            :documentation "A brief description of the header. This could contain examples of use. CommonMark syntax MAY be used for rich text representation.")
+             ("required" :any ;; boolean
+                         :documentation "Determines whether this header is mandatory.")
+             ("deprecated" :any ;; boolean
+                           :documentation "Specifies that a parameter is deprecated and SHOULD be transitioned out of usage. Default value is false.")
+             ("allowEmptyValue" :any ;; boolean
+                                :documentation "Sets the ability to pass empty-valued parameters. Default value is false. If style is used, and if behavior is n/a (cannot be serialized), the value of allowEmptyValue SHALL be ignored. Use of this property is NOT RECOMMENDED, as it is likely to be removed in a later revision.")
+             ("schema" schema
+                       :documentation "The schema defining the type used for the parameter.")
+             ("content" (:hash-table media-type)
+                        :documentation "A map containing the representations for the parameter. The key is the media type and the value describes it. The map MUST only contain one entry.")
+             ("style" :string
+                      :documentation "Describes how the parameter value will be serialized depending on the type of the parameter value. Default value: simple.")
+             ("explode" :any
+                        :documentation "When this is true, parameter values of type array or object generate separate parameters for each value of the array or key-value pair of the map. For other types of parameters this property has no effect. When style is form, the default value is true. For all other styles, the default value is false.")  ;; bool
+             ("allowReserved" :any ;; boolean
+                              :documentation "Determines whether the parameter value SHOULD allow reserved characters, as defined by [RFC3986] :/?#[]@!$&'()*+,;= to be included without percent-encoding. This property only applies to parameters with an in value of query. The default value is false.")
+             ("example" :any
+                        :documentation "Example of the parameter’s potential value. The example SHOULD match the specified schema and encoding properties if present. The example field is mutually exclusive of the examples field. Furthermore, if referencing a schema that contains an example, the example value SHALL override the example provided by the schema. To represent examples of media types that cannot naturally be represented in JSON or YAML, a string value can contain the example with escaping where necessary.")
+             ("examples" (:hash-table example)
+                         :documentation "Examples of the parameter’s potential value. Each example SHOULD contain a value in the correct format as specified in the parameter encoding. The examples field is mutually exclusive of the example field. Furthermore, if referencing a schema that contains an example, the examples value SHALL override the example provided by the schema.")
+             ("$ref" :string))
             (:documentation "The Header Object follows the structure of the Parameter Object with the following changes:
   1. name MUST NOT be specified, it is given in the corresponding headers map.
   2. in MUST NOT be specified, it is implicitly in header.
@@ -427,11 +442,8 @@ Note that this restriction on additional properties is a difference between Refe
     (cl:format stream "~A" (ref object))))
 
 (json-class schema nil
-            (;;root
-             ("title"       :string)
-             ;; core
-             ("$schema"     :any
-                            :documentation "Specifying Schema Dialects
+            (("$schema" :any
+                        :documentation "Specifying Schema Dialects
 
 It is important for tooling to be able to determine which dialect or meta-schema any given resource wishes to be processed with: JSON Schema Core, JSON Schema Validation, OpenAPI Schema dialect, or some custom meta-schema.
 
@@ -440,99 +452,287 @@ The $schema keyword MAY be present in any root Schema Object, and if present MUS
 To allow use of a different default $schema value for all Schema Objects contained within an OAS document, a jsonSchemaDialect value may be set within the OpenAPI Object. If this default is not set, then the OAS dialect schema id MUST be used for these Schema Objects. The value of $schema within a Schema Object always overrides any default.
 
 When a Schema Object is referenced from an external resource which is not an OAS document (e.g. a bare JSON Schema resource), then the value of the $schema keyword for schemas within that resource MUST follow JSON Schema rules")
-             ("$vocabulary" :any)
+             ("$vocabulary" (:hash-table :any) ;; bool value
+                            :documentation "The \"$vocabulary\" keyword is used in meta-schemas to identify the vocabularies available for use in schemas described by that meta-schema. It is also used to indicate whether each vocabulary is required or optional, in the sense that an implementation MUST understand the required vocabularies in order to successfully process the schema. Together, this information forms a dialect. Any vocabulary that is understood by the implementation MUST be processed in a manner consistent with the semantic definitions contained within the vocabulary. The value of this keyword MUST be an object. The property names in the object MUST be URIs (containing a scheme) and this URI MUST be normalized. Each URI that appears as a property name identifies a specific set of keywords and their semantics. The URI MAY be a URL, but the nature of the retrievable resource is currently undefined, and reserved for future use. Vocabulary authors MAY use the URL of the vocabulary specification, in a human-readable media type such as text/html or text/plain, as the vocabulary URI. Vocabulary documents may be added in forthcoming drafts. For now, identifying the keyword set is deemed sufficient as that, along with meta-schema validation, is how the current \"vocabularies\" work today. Any future vocabulary document format will be specified as a JSON document, so using text/html or other non-JSON formats in the meantime will not produce any future ambiguity. The values of the object properties MUST be booleans. If the value is true, then implementations that do not recognize the vocabulary MUST refuse to process any schemas that declare this meta-schema with \"$schema\". If the value is false, implementations that do not recognize the vocabulary SHOULD proceed with processing such schemas. The value has no impact if the implementation understands the vocabulary. Per 6.5, unrecognized keywords SHOULD be treated as annotations. This remains the case for keywords defined by unrecognized vocabularies. It is not currently possible to distinguish between unrecognized keywords that are defined in vocabularies from those that are not part of any vocabulary. The \"$vocabulary\" keyword SHOULD be used in the root schema of any schema document intended for use as a meta-schema. It MUST NOT appear in subschemas. The \"$vocabulary\" keyword MUST be ignored in schema documents that are not being processed as a meta-schema. This allows validating a meta-schema M against its own meta-schema M' without requiring the validator to understand the vocabularies declared by M.")
 
              ;; Base URI
-             ("$id"            :any)
+             ("$id" :string
+                    :documentation "The \"$id\" keyword identifies a schema resource with its canonical [RFC6596] URI. Note that this URI is an identifier and not necessarily a network locator. In the case of a network-addressable URL, a schema need not be downloadable from its canonical URI. If present, the value for this keyword MUST be a string, and MUST represent a valid URI-reference [RFC3986]. This URI-reference SHOULD be normalized, and MUST resolve to an absolute-URI [RFC3986] (without a fragment), or to a URI with an empty fragment. The empty fragment form is NOT RECOMMENDED and is retained only for backwards compatibility, and because the application/schema+json media type defines that a URI with an empty fragment identifies the same resource as the same URI with the fragment removed. However, since this equivalence is not part of the RFC 3986 normalization process [RFC3986], implementers and schema authors cannot rely on generic URI libraries understanding it. Therefore, \"$id\" MUST NOT contain a non-empty fragment, and SHOULD NOT contain an empty fragment. The absolute-URI form MUST be considered the canonical URI, regardless of the presence or absence of an empty fragment. An empty fragment is currently allowed because older meta-schemas have an empty fragment in their $id (or previously, id). A future draft may outright forbid even empty fragments in \"$id\". The absolute-URI also serves as the base URI for relative URI-references in keywords within the schema resource, in accordance with RFC 3986 section 5.1.1 [RFC3986] regarding base URIs embedded in content. The presence of \"$id\" in a subschema indicates that the subschema constitutes a distinct schema resource within a single schema document. Furthermore, in accordance with RFC 3986 section 5.1.2 [RFC3986] regarding encapsulating entities, if an \"$id\" in a subschema is a relative URI-reference, the base URI for resolving that reference is the URI of the parent schema resource. If no parent schema object explicitly identifies itself as a resource with \"$id\", the base URI is that of the entire document")
              ;; location-independent
-             ("$anchor"        :any)
-             ("$dynamicAnchor" :any)
-             ;; Schema Refeences
-             ("$ref"        :string)
-             ("$dynamicRef" :string)
-             ;; Schema Re-Use
-             ("$defs" :any)
-             ;; Comments
-             ("$comment" :any)
+             ("$anchor" :any
+                        :documentation "Using JSON Pointer fragments requires knowledge of the structure of the schema. When writing schema documents with the intention to provide re-usable schemas, it may be preferable to use a plain name fragment that is not tied to any particular structural location. This allows a subschema to be relocated without requiring JSON Pointer references to be updated. The \"$anchor\" and \"$dynamicAnchor\" keywords are used to specify such fragments. They are identifier keywords that can only be used to create plain name fragments, rather than absolute URIs as seen with \"$id\". The base URI to which the resulting fragment is appended is the canonical URI of the schema resource containing the \"$anchor\" or \"$dynamicAnchor\" in question. As discussed in the previous section, this is either the nearest \"$id\" in the same or parent schema object, or the base URI for the document as determined according to RFC 3986.
+If present, the value of this keyword MUST be a string and MUST start with a letter ([A-Za-z]) or underscore (\"_\"), followed by any number of letters, digits ([0-9]), hyphens (\"-\"), underscores (\"_\"), and periods (\".\"). This matches the US-ASCII part of XML's NCName production [xml-names]. Note that the anchor string does not include the \"#\" character, as it is not a URI-reference. An \"$anchor\": \"foo\" becomes the fragment \"#foo\" when used in a URI. See below for full examples. The effect of specifying the same fragment name multiple times within the same resource, using any combination of \"$anchor\" and/or \"$dynamicAnchor\", is undefined. Implementations MAY raise an error if such usage is detected.")
+             ("$dynamicAnchor" :any
+                               :documentation "Separately from the usual usage of URIs, \"$dynamicAnchor\" indicates that the fragment is an extension point when used with the \"$dynamicRef\" keyword. This low-level, advanced feature makes it easier to extend recursive schemas such as the meta-schemas, without imposing any particular semantics on that extension. See the section on \"$dynamicRef\" (Section 8.2.3.2) for details.
+In most cases, the normal fragment behavior both suffices and is more intuitive. Therefore it is RECOMMENDED that \"$anchor\" be used to create plain name fragments unless there is a clear need for \"$dynamicAnchor\".")
+             ;; Schema References
+             ("$ref" :string
+                     :documentation "Direct References with \"$ref\"
 
-             ;; fixed fields
+The \"$ref\" keyword is an applicator that is used to reference a statically identified schema. Its results are the results of the referenced schema. Note that this definition of how the results are determined means that other keywords can appear alongside of \"$ref\" in the same schema object.
+The value of the \"$ref\" keyword MUST be a string which is a URI-Reference. Resolved against the current URI base, it produces the URI of the schema to apply. This resolution is safe to perform on schema load, as the process of evaluating an instance cannot change how the reference resolves.")
+             ("$dynamicRef" :string
+                            :documentation "The $dynamicRef keyword is an applicator that allows for deferring the full resolution until runtime, at which point it is resolved each time it is encountered while evaluating an instance. Together with \"$dynamicAnchor\", \"$dynamicRef\" implements a cooperative extension mechanism that is primarily useful with recursive schemas (schemas that reference themselves). Both the extension point and the runtime-determined extension target are defined with \"$dynamicAnchor\", and only exhibit runtime dynamic behavior when referenced with \"$dynamicRef\". The value of the \"$dynamicRef\" property MUST be a string which is a URI-Reference. Resolved against the current URI base, it produces the URI used as the starting point for runtime resolution. This initial resolution is safe to perform on schema load. If the initially resolved starting point URI includes a fragment that was created by the \"$dynamicAnchor\" keyword, the initial URI MUST be replaced by the URI (including the fragment) for the outermost schema resource in the dynamic scope (Section 7.1) that defines an identically named fragment with \"$dynamicAnchor\".
+Otherwise, its behavior is identical to \"$ref\", and no runtime resolution is needed.")
+             ;; Schema Re-Use
+             ("$defs" (:hash-table schema)
+                      :documentation "Schema Re-Use With \"$defs\"
+
+The \"$defs\" keyword reserves a location for schema authors to inline re-usable JSON Schemas into a more general schema. The keyword does not directly affect the validation result.
+This keyword's value MUST be an object. Each member value of this object MUST be a valid JSON Schema. As an example, here is a schema describing an array of positive integers, where the positive integer constraint is a subschema in \"$defs\":
+
+{
+    \"type\": \"array\",
+    \"items\": { \"$ref\": \"#/$defs/positiveInteger\" },
+    \"$defs\": {
+        \"positiveInteger\": {
+            \"type\": \"integer\",
+            \"exclusiveMinimum\": 0
+        }
+    }
+}")
+             ("$comment" :string
+                         :documentation "Comments With \"$comment\"
+
+This keyword reserves a location for comments from schema authors to readers or maintainers of the schema.
+The value of this keyword MUST be a string. Implementations MUST NOT present this string to end users. Tools for editing schemas SHOULD support displaying and editing this keyword. The value of this keyword MAY be used in debug or error output which is intended for developers making use of schemas. Schema vocabularies SHOULD allow \"$comment\" within any object containing vocabulary keywords. Implementations MAY assume \"$comment\" is allowed unless the vocabulary specifically forbids it. Vocabularies MUST NOT specify any effect of \"$comment\" beyond what is described in this specification. Tools that translate other media types or programming languages to and from application/schema+json MAY choose to convert that media type or programming language's native comments to or from \"$comment\" values. The behavior of such translation when both native comments and \"$comment\" properties are present is implementation-dependent. Implementations MAY strip \"$comment\" values at any point during processing. In particular, this allows for shortening schemas when the size of deployed schemas is a concern. Implementations MUST NOT take any other action based on the presence, absence, or contents of \"$comment\" properties. In particular, the value of \"$comment\" MUST NOT be collected as an annotation result.")
              ("discriminator" discriminator
                               :documentation "Adds support for polymorphism. The discriminator is an object name that is used to differentiate between other schemas which may satisfy the payload description. See Composition and Inheritance for more details.")
              ("xml" :any
                     :documentation "This MAY be used only on properties schemas. It has no effect on root schemas. Adds additional metadata to describe the XML representation of this property.
 
 XML Modeling
-The xml property allows extra definitions when translating the JSON definition to XML. The XML Object contains additional information about the available options.") ;; xml object
+The xml property allows extra definitions when translating the JSON definition to XML. The XML Object contains additional information about the available options.")
              ("externalDocs" external-documentation
                              :documentation "Additional external documentation for this schema.")
-
-             ;; any
-             ("type"  :any)
-             ("enum" :any)
-             ("const" :any)
-             ;; numeric
-             ("multipleOf"  :number)
-             ("maximum"     :number)
-             ("exclusiveMaximum" :any) ;; should be bool
-             ("minimum"     :number)
-             ("exclusiveMinimum" :any) ;; should be bool
+             ;; A Vocabulary for Structural Validation
+             ;; Validation Keywords for Any Instance Type
+             ("type"  :any :reader schema-type
+                      :documentation "The value of this keyword MUST be either a string or an array. If it is an array, elements of the array MUST be strings and MUST be unique.
+String values MUST be one of the six primitive types (\"null\", \"boolean\", \"object\", \"array\", number, or string\"), or \"integer\" which matches any number with a zero fractional part.
+If the value of type is a string, then an instance validates successfully if its type matches the type represented by the value of the string. If the value of type is an array, then an instance validates successfully if its type matches any of the types indicated by the strings in the array.")
+             ("enum" :list
+                     :documentation "The value of this keyword MUST be an array. This array SHOULD have at least one element. Elements in the array SHOULD be unique.
+An instance validates successfully against this keyword if its value is equal to one of the elements in this keyword's array value.
+Elements in the array might be of any type, including null.")
+             ("const" :any
+                      :documentation "The value of this keyword MAY be of any type, including null.
+Use of this keyword is functionally equivalent to an \"enum\" (Section 6.1.2) with a single value.
+An instance validates successfully against this keyword if its value is equal to the value of the keyword.")
+             ;; Validation Keywords for Numeric Instances (number and integer)
+             ("multipleOf" :number
+                           :documentation "The value of \"multipleOf\" MUST be a number, strictly greater than 0.
+A numeric instance is valid only if division by this keyword's value results in an integer.")
+             ("maximum" :number
+                        :documentation "The value of \"maximum\" MUST be a number, representing an inclusive upper limit for a numeric instance.
+If the instance is a number, then this keyword validates only if the instance is less than or exactly equal to \"maximum\".")
+             ("exclusiveMaximum" :any  ;; number in oas 3.1
+                                 :documentation "The value of \"exclusiveMaximum\" MUST be a number, representing an exclusive upper limit for a numeric instance. If the instance is a number, then the instance is valid only if it has a value strictly less than (not equal to) \"exclusiveMaximum\".")
+             ("minimum" :number
+                        :documentation "The value of \"minimum\" MUST be a number, representing an inclusive lower limit for a numeric instance. If the instance is a number, then this keyword validates only if the instance is greater than or exactly equal to \"minimum\".")
+             ("exclusiveMinimum" :any ;; number in oas 3.1
+                                 :documentation "The value of \"exclusiveMinimum\" MUST be a number, representing an exclusive lower limit for a numeric instance. If the instance is a number, then the instance is valid only if it has a value strictly greater than (not equal to) \"exclusiveMinimum\".")
              ;; Validation Keywords for Strings
-             ("maxLength"   :number :documentation "non-negative integer")
-             ("minLength" :number :documentation "non-negative integer")
-             ("pattern" :string :documentation "ECMA-262 regular expression")
-             ;; Validation Keywords for Arrays = list
-             ("maxItems" :number :documentation "non-negative integer")
-             ("minItems" :number :documentation "non-negative integer")
-             ("uniqueItems" :any :documentation "boolean")
-             ("maxContains" :number :documentation "non-negative integer")
-             ("minContains" :number :documentation "non-negative integer")
+             ("maxLength" :number
+                          :documentation "The value of this keyword MUST be a non-negative integer. A string instance is valid against this keyword if its length is less than, or equal to, the value of this keyword. The length of a string instance is defined as the number of its characters as defined by RFC 8259 [RFC8259].
+")
+             ("minLength" :number
+                          :documentation "The value of this keyword MUST be a non-negative integer. A string instance is valid against this keyword if its length is greater than, or equal to, the value of this keyword. The length of a string instance is defined as the number of its characters as defined by RFC 8259 [RFC8259]. Omitting this keyword has the same behavior as a value of 0.")
+             ("pattern" :string
+                        :documentation "The value of this keyword MUST be a string.
+This string SHOULD be a valid regular expression, according to the ECMA-262 regular expression dialect. A string instance is considered valid if the regular expression matches the instance successfully. Recall: regular expressions are not implicitly anchored.")
+             ;; Validation Keywords for Arrays
+             ("maxItems" :number
+                         :documentation "The value of this keyword MUST be a non-negative integer. An array instance is valid against \"maxItems\" if its size is less than, or equal to, the value of this keyword.")
+             ("minItems" :number
+                         :documentation "The value of this keyword MUST be a non-negative integer. An array instance is valid against \"minItems\" if its size is greater than, or equal to, the value of this keyword. Omitting this keyword has the same behavior as a value of 0.")
+             ("uniqueItems" :any ;; boolean
+                            :documentation "The value of this keyword MUST be a boolean. If this keyword has boolean value false, the instance validates successfully. If it has boolean value true, the instance validates successfully if all of its elements are unique. Omitting this keyword has the same behavior as a value of false.
+")
+             ("maxContains" :number
+                            :documentation "The value of this keyword MUST be a non-negative integer.
+If \"contains\" is not present within the same schema object, then this keyword has no effect. An instance array is valid against \"maxContains\" in two ways, depending on the form of the annotation result of an adjacent \"contains\" [json-schema] keyword. The first way is if the annotation result is an array and the length of that array is less than or equal to the \"maxContains\" value. The second way is if the annotation result is a boolean \"true\" and the instance array length is less than or equal to the \"maxContains\" value.")
+             ("minContains" :number
+                            :documentation "The value of this keyword MUST be a non-negative integer.
+If \"contains\" is not present within the same schema object, then this keyword has no effect. An instance array is valid against \"minContains\" in two ways, depending on the form of the annotation result of an adjacent \"contains\" [json-schema] keyword. The first way is if the annotation result is an array and the length of that array is greater than or equal to the \"minContains\" value. The second way is if the annotation result is a boolean \"true\" and the instance array length is greater than or equal to the \"minContains\" value. A value of 0 is allowed, but is only useful for setting a range of occurrences from 0 to the value of \"maxContains\". A value of 0 causes \"minContains\" and \"contains\" to always pass validation (but validation can still fail against a \"maxContains\" keyword). Omitting this keyword has the same behavior as a value of 1.")
              ;; Validation Keywords for Objects (hash-table)
-             ("maxProperties" :number :documentation "non-negative integer")
-             ("minProperties" :number :documentation "non-negative integer")
-             ("required"    (:list :string))
-             ("dependendRequired" :hash-table)
+             ("maxProperties" :number
+                              :documentation "The value of this keyword MUST be a non-negative integer.
+An object instance is valid against \"maxProperties\" if its number of properties is less than, or equal to, the value of this keyword.")
+             ("minProperties" :number
+                              :documentation "The value of this keyword MUST be a non-negative integer.
+An object instance is valid against \"minProperties\" if its number of properties is greater than, or equal to, the value of this keyword. Omitting this keyword has the same behavior as a value of 0.")
+             ("required"    (:list :string)
+                            :documentation "The value of this keyword MUST be an array. Elements of this array, if any, MUST be strings, and MUST be unique.
+An object instance is valid against this keyword if every item in the array is the name of a property in the instance. Omitting this keyword has the same behavior as an empty array.")
+             ("dependendRequired" (:hash-table :list)
+                                  :documentation "The value of this keyword MUST be an object. Properties in this object, if any, MUST be arrays. Elements in each array, if any, MUST be strings, and MUST be unique.
+This keyword specifies properties that are required if a specific other property is present. Their requirement is dependent on the presence of the other property. Validation succeeds if, for each name that appears in both the instance and as a name within this keyword's value, every item in the corresponding array is also the name of a property in the instance. Omitting this keyword has the same behavior as an empty object.")
+             ;; Contents of String-Encoded Data
+             ("contentEncoding" :string
+                                :documentation "If the instance value is a string, this property defines that the string SHOULD be interpreted as encoded binary data and decoded using the encoding named by this property.
+Possible values indicating base 16, 32, and 64 encodings with several variations are listed in RFC 4648 [RFC4648]. Additionally, sections 6.7 and 6.8 of RFC 2045 [RFC2045] provide encodings used in MIME. This keyword is derived from MIME's Content-Transfer-Encoding header, which was designed to map binary data into ASCII characters. It is not related to HTTP's Content-Encoding header, which is used to encode (e.g. compress or encrypt) the content of HTTP request and responses. As \"base64\" is defined in both RFCs, the definition from RFC 4648 SHOULD be assumed unless the string is specifically intended for use in a MIME context. Note that all of these encodings result in strings consisting only of 7-bit ASCII characters. Therefore, this keyword has no meaning for strings containing characters outside of that range. If this keyword is absent, but \"contentMediaType\" is present, this indicates that the encoding is the identity encoding, meaning that no transformation was needed in order to represent the content in a UTF-8 string. The value of this property MUST be a string.")
+             ("contentMediaType" :string
+                                 :documentation "If the instance is a string, this property indicates the media type of the contents of the string. If \"contentEncoding\" is present, this property describes the decoded string. The value of this property MUST be a string, which MUST be a media type, as defined by RFC 2046 [RFC2046].")
+             ("contentSchema" :string
+                              :documentation "If the instance is a string, and if \"contentMediaType\" is present, this property contains a schema which describes the structure of the string. This keyword MAY be used with any media type that can be mapped into JSON Schema's data model. The value of this property MUST be a valid JSON schema. It SHOULD be ignored if \"contentMediaType\" is not present.")
 
-             ;; String-Encoded Data
-             ("contentEncoding" :string)
-             ("contentMediaType" :string)
-             ("contentSchema" :string)
+             ;; Basic Meta-Data Annotations
+             ("title" :string
+                      :documentation "Can be used to decorate a user interface with information about the data produced by this user interface. A title will preferably be short.")
+             ("description" :string
+                            :documentation "Can be used to decorate a user interface with information about the data produced by this user interface. A description will provide explanation about the purpose of the instance described by this schema.
+")
+             ("default" :any
+                        :documentation "There are no restrictions placed on the value of this keyword. When multiple occurrences of this keyword are applicable to a single sub-instance, implementations SHOULD remove duplicates.
+This keyword can be used to supply a default JSON value associated with a particular schema. It is RECOMMENDED that a default value be valid against the associated schema.")
+             ("deprecated" :any ;; boolean
+                           :documentation "The value of this keyword MUST be a boolean.
+When multiple occurrences of this keyword are applicable to a single sub-instance, applications SHOULD consider the instance location to be deprecated if any occurrence specifies a true value. If \"deprecated\" has a value of boolean true, it indicates that applications SHOULD refrain from usage of the declared property. It MAY mean the property is going to be removed in the future. A root schema containing \"deprecated\" with a value of true indicates that the entire resource being described MAY be removed in the future. The \"deprecated\" keyword applies to each instance location to which the schema object containing the keyword successfully applies. This can result in scenarios where every array item or object property is deprecated even though the containing array or object is not. Omitting this keyword has the same behavior as a value of false.")
+             ;; "readOnly" and "writeOnly"
+             ("readOnly" :any ;; boolean
+                         :documentation "The value of these keywords MUST be a boolean. When multiple occurrences of these keywords are applicable to a single sub-instance, the resulting behavior SHOULD be as for a true value if any occurrence specifies a true value, and SHOULD be as for a false value otherwise.
+If \"readOnly\" has a value of boolean true, it indicates that the value of the instance is managed exclusively by the owning authority, and attempts by an application to modify the value of this property are expected to be ignored or rejected by that owning authority.
+An instance document that is marked as \"readOnly\" for the entire document MAY be ignored if sent to the owning authority, or MAY result in an error, at the authority's discretion.
+For example, \"readOnly\" would be used to mark a database-generated serial number as read-only, while \"writeOnly\" would be used to mark a password input field. These keywords can be used to assist in user interface instance generation. In particular, an application MAY choose to use a widget that hides input values as they are typed for write-only fields.
+Omitting these keywords has the same behavior as values of false")
+             ("writeOnly" :any ;; boolean
+                          :documentation "The value of these keywords MUST be a boolean.
+When multiple occurrences of these keywords are applicable to a single sub-instance, the resulting behavior SHOULD be as for a true value if any occurrence specifies a true value, and SHOULD be as for a false value otherwise.
+If \"writeOnly\" has a value of boolean true, it indicates that the value is never present when the instance is retrieved from the owning authority. It can be present when sent to the owning authority to update or create the document (or the resource it represents), but it will not be included in any updated or newly created version of the instance. An instance document that is marked as \"writeOnly\" for the entire document MAY be returned as a blank document of some sort, or MAY produce an error upon retrieval, or have the retrieval request ignored, at the authority's discretion. For example, \"readOnly\" would be used to mark a database-generated serial number as read-only, while \"writeOnly\" would be used to mark a password input field. These keywords can be used to assist in user interface instance generation. In particular, an application MAY choose to use a widget that hides input values as they are typed for write-only fields.
+Omitting these keywords has the same behavior as values of false.")
+             ("examples" :list
+                         :documentation "The value of this keyword MUST be an array. There are no restrictions placed on the values within the array. When multiple occurrences of this keyword are applicable to a single sub-instance, implementations MUST provide a flat array of all values rather than an array of arrays. This keyword can be used to provide sample JSON values associated with a particular schema, for the purpose of illustrating usage. It is RECOMMENDED that these values be valid against the associated schema. Implementations MAY use the value(s) of \"default\", if present, as an additional example. If \"examples\" is absent, \"default\" MAY still be used in this manner.
+")
 
-             ;; Basic Meta-Data
-             ("description" :string)
-             ("default"     :any)
-             ("deprecated" :any) ;; bool
-             ("readOnly"   :any)
-             ("examples"   :any)
+             ;; Applying Subschemas in Place
+             ;;; These keywords apply subschemas to the same location in the instance as the parent schema is being applied. They allow combining or modifying the subschema results in various ways.
+             ;;; Subschemas of these keywords evaluate the instance completely independently such that the results of one such subschema MUST NOT impact the results of sibling subschemas. Therefore subschemas may be applied in any order.
+             ;; Applying Subschemas With Logic
+             ;;; These keywords correspond to logical operators for combining or modifying the boolean assertion results of the subschemas. They have no direct impact on annotation collection, although they enable the same annotation keyword to be applied to an instance location with different values. Annotation keywords define their own rules for combining such values.
+             ("allOf" (:list schema)
+                      :documentation "This keyword's value MUST be a non-empty array. Each item of the array MUST be a valid JSON Schema.
+An instance validates successfully against this keyword if it validates successfully against all schemas defined by this keyword's value.")
+             ("anyOf" (:list schema)
+                      :documentation "This keyword's value MUST be a non-empty array. Each item of the array MUST be a valid JSON Schema.
+An instance validates successfully against this keyword if it validates successfully against at least one schema defined by this keyword's value. Note that when annotations are being collected, all subschemas MUST be examined so that annotations are collected from each subschema that validates successfully.")
+             ("oneOf" (:list schema)
+                      :documentation "This keyword's value MUST be a non-empty array. Each item of the array MUST be a valid JSON Schema.
+An instance validates successfully against this keyword if it validates successfully against exactly one schema defined by this keyword's value.")
 
-             ;; Subschema Logic
-             ("allOf" :any)
-             ("anyOf" (:list any-of))
-             ("oneOf" (:list items))
-             ("not" :any)
-
-             ;; Subschemas Conditionally
-
-             ;; ("if"   :any)
-             ;; ("then" :any)
-             ("else" :any)
-             ("dependentSchemas" :any)
+             ("not" schema :reader schema-not
+                    :documentation "This keyword's value MUST be a valid JSON Schema.
+An instance is valid against this keyword if it fails to validate successfully against the schema defined by this keyword.")
+             ;; Keywords for Applying Subschemas Conditionally
+             ;;; Three of these keywords work together to implement conditional application of a subschema based on the outcome of another subschema. The fourth is a shortcut for a specific conditional case.
+             ;;; "if", "then", and "else" MUST NOT interact with each other across subschema boundaries. In other words, an "if" in one branch of an "allOf" MUST NOT have an impact on a "then" or "else" in another branch.
+             ;;; There is no default behavior for "if", "then", or "else" when they are not present. In particular, they MUST NOT be treated as if present with an empty schema, and when "if" is not present, both "then" and "else" MUST be entirely ignored.
+             ("if" schema :reader schema-if
+                   :documentation "This keyword's value MUST be a valid JSON Schema.
+This validation outcome of this keyword's subschema has no direct effect on the overall validation result. Rather, it controls which of the \"then\" or \"else\" keywords are evaluated.
+Instances that successfully validate against this keyword's subschema MUST also be valid against the subschema value of the \"then\" keyword, if present.
+Instances that fail to validate against this keyword's subschema MUST also be valid against the subschema value of the \"else\" keyword, if present.
+If annotations (Section 7.7) are being collected, they are collected from this keyword's subschema in the usual way, including when the keyword is present without either \"then\" or \"else\".")
+             ("then" schema
+                     :documentation "This keyword's value MUST be a valid JSON Schema.
+When \"if\" is present, and the instance successfully validates against its subschema, then validation succeeds against this keyword if the instance also successfully validates against this keyword's subschema.
+This keyword has no effect when \"if\" is absent, or when the instance fails to validate against its subschema. Implementations MUST NOT evaluate the instance against this keyword, for either validation or annotation collection purposes, in such cases.")
+             ("else" schema
+                     :documentation "This keyword's value MUST be a valid JSON Schema.
+When \"if\" is present, and the instance fails to validate against its subschema, then validation succeeds against this keyword if the instance successfully validates against this keyword's subschema.
+This keyword has no effect when \"if\" is absent, or when the instance successfully validates against its subschema. Implementations MUST NOT evaluate the instance against this keyword, for either validation or annotation collection purposes, in such cases.")
+             ("dependentSchemas" (:hash-table schema)
+                                 :documentation "This keyword specifies subschemas that are evaluated if the instance is an object and contains a certain property.
+This keyword's value MUST be an object. Each value in the object MUST be a valid JSON Schema.
+If the object key is a property in the instance, the entire instance must validate against the subschema. Its use is dependent on the presence of the property.
+Omitting this keyword has the same behavior as an empty object.
+")
 
              ;; Keywords for Applying Subschemas to Child Instances
+             ;;;; Each of these keywords defines a rule for applying its subschema(s) to child instances, specifically object properties and array items, and combining their results.
+             ;;; Keywords for Applying Subschemas to Arrays
              ;; Subschemas to Arrays
-             ("prefixItems" :any)
-             ("items"       items)
-             ("contains" :any)
-             ;;Subschemas to Objects
-             ("properties" (:hash-table property))
-             ("patternProperties" :any)
-             ("additionalProperties"  :any)
-             ("propertyNames" :any)
+             ("prefixItems" (:list schema)
+                            :documentation "The value of \"prefixItems\" MUST be a non-empty array of valid JSON Schemas.
+Validation succeeds if each element of the instance validates against the schema at the same position, if any. This keyword does not constrain the length of the array. If the array is longer than this keyword's value, this keyword validates only the prefix of matching length.
+This keyword produces an annotation value which is the largest index to which this keyword applied a subschema. The value MAY be a boolean true if a subschema was applied to every index of the instance, such as is produced by the \"items\" keyword. This annotation affects the behavior of \"items\" and \"unevaluatedItems\".
+Omitting this keyword has the same assertion behavior as an empty array.")
+             ("items" schema
+                      :documentation "The value of \"items\" MUST be a valid JSON Schema.
+This keyword applies its subschema to all instance elements at indexes greater than the length of the \"prefixItems\" array in the same schema object, as reported by the annotation result of that \"prefixItems\" keyword. If no such annotation result exists, \"items\" applies its subschema to all instance array elements. Note that the behavior of \"items\" without \"prefixItems\" is identical to that of the schema form of \"items\" in prior drafts. When \"prefixItems\" is present, the behavior of \"items\" is identical to the former \"additionalItems\" keyword.
+If the \"items\" subschema is applied to any positions within the instance array, it produces an annotation result of boolean true, indicating that all remaining array elements have been evaluated against this keyword's subschema. This annotation affects the behavior of \"unevaluatedItems\" in the Unevaluated vocabulary.
+Omitting this keyword has the same assertion behavior as an empty schema.
+Implementations MAY choose to implement or optimize this keyword in another way that produces the same effect, such as by directly checking for the presence and size of a \"prefixItems\" array. Implementations that do not support annotation collection MUST do so.")
+             ("contains" schema
+                         :documentation "The value of this keyword MUST be a valid JSON Schema.
+An array instance is valid against \"contains\" if at least one of its elements is valid against the given schema, except when \"minContains\" is present and has a value of 0, in which case an array instance MUST be considered valid against the \"contains\" keyword, even if none of its elements is valid against the given schema.
+This keyword produces an annotation value which is an array of the indexes to which this keyword validates successfully when applying its subschema, in ascending order. The value MAY be a boolean \"true\" if the subschema validates successfully when applied to every index of the instance. The annotation MUST be present if the instance array to which this keyword's schema applies is empty.
+This annotation affects the behavior of \"unevaluatedItems\" in the Unevaluated vocabulary, and MAY also be used to implement the \"minContains\" and \"maxContains\" keywords in the Validation vocabulary.
+The subschema MUST be applied to every array element even after the first match has been found, in order to collect annotations for use by other keywords. This is to ensure that all possible annotations are collected.")
 
-             ;; dependent
-             ("unevaluatedItems" :any)
-             ("unevaluatedProperties" :any)
+             ;;; Keywords for Applying Subschemas to Objects
+             ("properties" (:hash-table schema)
+                           :documentation "The value of \"properties\" MUST be an object.
+Each value of this object MUST be a valid JSON Schema.
+Validation succeeds if, for each name that appears in both the instance and as a name within this keyword's value, the child instance for that name successfully validates against the corresponding schema.
+The annotation result of this keyword is the set of instance property names matched by this keyword. This annotation affects the behavior of \"additionalProperties\" (in this vocabulary) and \"unevaluatedProperties\" in the Unevaluated vocabulary.
+Omitting this keyword has the same assertion behavior as an empty object.")
+             ("patternProperties" (:hash-table schema)
+                                  :documentation "The value of \"patternProperties\" MUST be an object.
+Each property name of this object SHOULD be a valid regular expression, according to the ECMA-262 regular expression dialect. Each property value of this object MUST be a valid JSON Schema.
+Validation succeeds if, for each instance name that matches any regular expressions that appear as a property name in this keyword's value, the child instance for that name successfully validates against each schema that corresponds to a matching regular expression.
+The annotation result of this keyword is the set of instance property names matched by this keyword. This annotation affects the behavior of \"additionalProperties\" (in this vocabulary) and \"unevaluatedProperties\" (in the Unevaluated vocabulary).
+Omitting this keyword has the same assertion behavior as an empty object.")
+             ("additionalProperties" :any
+                                     :documentation "The value of \"additionalProperties\" MUST be a valid JSON Schema.
+The behavior of this keyword depends on the presence and annotation results of \"properties\" and \"patternProperties\" within the same schema object. Validation with \"additionalProperties\" applies only to the child values of instance names that do not appear in the annotation results of either \"properties\" or \"patternProperties\".
+For all such properties, validation succeeds if the child instance validates against the \"additionalProperties\" schema.
+The annotation result of this keyword is the set of instance property names validated by this keyword's subschema. This annotation affects the behavior of \"unevaluatedProperties\" in the Unevaluated vocabulary.
+Omitting this keyword has the same assertion behavior as an empty schema.
+Implementations MAY choose to implement or optimize this keyword in another way that produces the same effect, such as by directly checking the names in \"properties\" and the patterns in \"patternProperties\" against the instance property set. Implementations that do not support annotation collection MUST do so. In defining this option, it seems there is the potential for ambiguity in the output format. The ambiguity does not affect validation results, but it does affect the resulting output format. The ambiguity allows for multiple valid output results depending on whether annotations are used or a solution that \"produces the same effect\" as draft-07. It is understood that annotations from failing schemas are dropped.")
+             ("propertyNames" :any
+                              :documentation "The value of \"propertyNames\" MUST be a valid JSON Schema.
+If the instance is an object, this keyword validates if every property name in the instance validates against the provided schema. Note the property name that the schema is testing will always be a string.
+Omitting this keyword has the same behavior as an empty schema.")
+             ; A Vocabulary for Unevaluated Locations
+             ;; Keyword Independence
+             ("unevaluatedItems" :any
+                                 :documentation "The value of \"unevaluatedItems\" MUST be a valid JSON Schema.
+The behavior of this keyword depends on the annotation results of adjacent keywords that apply to the instance location being validated. Specifically, the annotations from \"prefixItems\", \"items\", and \"contains\", which can come from those keywords when they are adjacent to the \"unevaluatedItems\" keyword. Those three annotations, as well as \"unevaluatedItems\", can also result from any and all adjacent in-place applicator (Section 10.2) keywords. This includes but is not limited to the in-place applicators defined in this document.
+If no relevant annotations are present, the \"unevaluatedItems\" subschema MUST be applied to all locations in the array. If a boolean true value is present from any of the relevant annotations, \"unevaluatedItems\" MUST be ignored. Otherwise, the subschema MUST be applied to any index greater than the largest annotation value for \"prefixItems\", which does not appear in any annotation value for \"contains\".
+This means that \"prefixItems\", \"items\", \"contains\", and all in-place applicators MUST be evaluated before this keyword can be evaluated. Authors of extension keywords MUST NOT define an in-place applicator that would need to be evaluated after this keyword.
+If the \"unevaluatedItems\" subschema is applied to any positions within the instance array, it produces an annotation result of boolean true, analogous to the behavior of \"items\". This annotation affects the behavior of \"unevaluatedItems\" in parent schemas.
+Omitting this keyword has the same assertion behavior as an empty schema.")
+             ("unevaluatedProperties" :any
+                                      :documentation "The value of \"unevaluatedProperties\" MUST be a valid JSON Schema.
+The behavior of this keyword depends on the annotation results of adjacent keywords that apply to the instance location being validated. Specifically, the annotations from \"properties\", \"patternProperties\", and \"additionalProperties\", which can come from those keywords when they are adjacent to the \"unevaluatedProperties\" keyword. Those three annotations, as well as \"unevaluatedProperties\", can also result from any and all adjacent in-place applicator (Section 10.2) keywords. This includes but is not limited to the in-place applicators defined in this document.
+Validation with \"unevaluatedProperties\" applies only to the child values of instance names that do not appear in the \"properties\", \"patternProperties\", \"additionalProperties\", or \"unevaluatedProperties\" annotation results that apply to the instance location being validated.
+For all such properties, validation succeeds if the child instance validates against the \"unevaluatedProperties\" schema.
+This means that \"properties\", \"patternProperties\", \"additionalProperties\", and all in-place applicators MUST be evaluated before this keyword can be evaluated. Authors of extension keywords MUST NOT define an in-place applicator that would need to be evaluated after this keyword.
+The annotation result of this keyword is the set of instance property names validated by this keyword's subschema. This annotation affects the behavior of \"unevaluatedProperties\" in parent schemas.
+Omitting this keyword has the same assertion behavior as an empty schema.")
+             ("keywordLocation" :string
+                                :documentation "The relative location of the validating keyword that follows the validation path. The value MUST be expressed as a JSON Pointer, and it MUST include any by-reference applicators such as \"$ref\" or \"$dynamicRef\".
 
-             ("format" :any))
+/properties/width/$ref/minimum
+
+Note that this pointer may not be resolvable by the normal JSON Pointer process due to the inclusion of these by-reference applicator keywords.")
+             ("absoluteKeywordLocation" :string
+                                        :documentation "The absolute, dereferenced location of the validating keyword. The value MUST be expressed as a full URI using the canonical URI of the relevant schema resource with a JSON Pointer fragment, and it MUST NOT include by-reference applicators such as \"$ref\" or \"$dynamicRef\" as non-terminal path components. It MAY end in such keywords if the error or annotation is for that keyword, such as an unresolvable reference. Note that \"absolute\" here is in the sense of \"absolute filesystem path\" (meaning the complete location) rather than the \"absolute-URI\" terminology from RFC 3986 (meaning with scheme but without fragment). Keyword absolute locations will have a fragment in order to identify the keyword.
+
+https://example.com/schemas/common#/$defs/count/minimum
+
+This information MAY be omitted only if either the dynamic scope did not pass over a reference or if the schema does not declare an absolute URI as its \"$id\".")
+             ("instanceLocation" :string
+                                 :documentation "The location of the JSON value within the instance being validated. The value MUST be expressed as a JSON Pointer.")
+             ("valid" :any ;; boolean
+                      :documentation "A boolean value indicating the overall validation success or failure")
+             ("errors" :any
+                       :documentation "The collection of errors or annotations produced by a failed validation")
+             ("annotations" :any
+                            :documentation "The collection of errors or annotations produced by a successful validation")
+             ("nullable" :any ;; boolean
+              :documentation "Marks a slot that can be null."))
             (:documentation "The Schema Object allows the definition of input and output data types. These types can be objects, but also primitives and arrays. This object is a superset of the JSON Schema Specification Draft 2020-12.
 
 For more information about the properties, see JSON Schema Core and JSON Schema Validation.
@@ -595,7 +795,7 @@ The discriminator object is legal only when using one of the composite keywords 
 When using arrays, XML element names are not inferred (for singular/plural forms) and the name property SHOULD be used to add that information. See examples for expected behavior."))
 
 (json-class security-scheme nil
-            (("type" :string
+            (("type" :string :reader security-scheme-type
                      :documentation "REQUIRED. The type of the security scheme. Valid values are \"apiKey\", \"http\", \"mutualTLS\", \"oauth2\", \"openIdConnect\".")
              ("description" :string
                             :documentation "A description for security scheme. CommonMark syntax MAY be used for rich text representation.")
@@ -619,11 +819,11 @@ Supported schemes are HTTP authentication, an API key (either as a header, a coo
 (defmethod print-object ((object security-scheme) stream)
   (print-unreadable-object (object stream :type t :identity t)
     (cl:format stream "type: ~A, name: ~A, in: ~A, scheme: ~A"
-               (type object) (name object) (in object) (scheme object))))
+               (slot-value object 'type) (name object) (in object) (scheme object))))
 
 (json-class o-auth-flows nil
-            (("implicit"  o-auth-flow
-                          :documentation "Configuration for the OAuth Implicit flow")
+            (("implicit" o-auth-flow
+                         :documentation "Configuration for the OAuth Implicit flow")
              ("password" o-auth-flow
                          :documentation "Configuration for the OAuth Resource Owner Password flow")
              ("clientCredentials" o-auth-flow
@@ -650,69 +850,3 @@ Supported schemes are HTTP authentication, an API key (either as a header, a coo
 
 (json-class path-item-or-reference nil
             (("title"       :string)))
-
-(json-class items nil
-            (("title"       :string)
-             ("type"        :any
-                            :documentation "String or list (vector)")
-             ("items"       items)
-             ("minItems"    :number)
-             ("maxItems"    :number)
-             ("minLength"   :number)
-             ("maxLength"   :number)
-             ("example"     :any)
-             ("default"     :any)
-             ("$ref"        :string)
-             ("description" :string)
-             ("anyOf"       (:list any-of))
-             ("required"    (:list :string))
-             ("properties"  (:hash-table property))
-             ("enum"        :list)))
-
-(json-class property nil
-            (("description" :string)
-             ("$ref"        :string)
-             ("title"       :string)
-             ("type"        :any
-                            :documentation "string or vector (list)")
-             ("additionalProperties" :any) ;; should be :bool
-             ("required"    :list)
-             ("maximum"     :number)
-             ("minimum"     :number)
-             ("enum"        :any) ;;hash-table?
-             ("anyOf"       :any) ;;hash-table?
-             ("oneOf"       (:list items))
-             ("contentMediaType" :string)
-             ("properties"  (:hash-table property))
-             ("format"      :string)
-             ("items"       items)
-             ("example"     :any)
-             ("default"     :any)
-             ("nullable"    :any))) ;; should be :bool
-
-(json-class all-of nil
-            (("title"       :string)
-             ("$ref"        :string)
-             ("type"        :string)
-             ("description" :string)
-             ("required"    :list)
-             ("allOf"       (:list all-of))
-             ("properties"  (:hash-table property))))
-
-(json-class any-of nil
-            (("title"       :string)
-             ("$ref"        :string)
-             ("type"        :string)
-             ("description" :string)
-             ("allOf"       (:list all-of))))
-
-(json-class definition nil
-            (("description" :string)
-             ("properties"  (:hash-table property))
-             ("required"    :list)
-             ("type"        :string)))
-
-(json-class content nil
-            (("schema" schema)
-             ("example" :any)
-             ("examples" :any))) ;; string or list

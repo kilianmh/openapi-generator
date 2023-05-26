@@ -187,7 +187,7 @@
             (schema-one-of
              (cons (quote cl:or)
                    (mapcar (function (lambda (items)
-                             (intern (upcase (type items)))))
+                             (intern (upcase (slot-value items (quote type))))))
                            (coerce schema-one-of (quote list)))))))))
 
 (defgeneric assure-required (required-parameters)

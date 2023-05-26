@@ -48,7 +48,7 @@
             (("url" :string)))
 
 (json-class apis-guru-origin nil
-            (("format" :string)
+            (("format" :string :reader apis-guru-origin-format)
              ("url" :string)
              ("version" :string)))
 

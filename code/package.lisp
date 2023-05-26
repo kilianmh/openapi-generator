@@ -1,6 +1,5 @@
 (uiop:define-package openapi-generator
     (:use #:cl)
-  (:shadow #:get #:type #:continue #:delete #:trace #:format #:search #:not)
   (:shadowing-import-from #:closer-mop
                           #:defgeneric #:slot-definition-name)
   (:import-from #:uiop
