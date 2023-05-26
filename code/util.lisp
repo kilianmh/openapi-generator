@@ -5,11 +5,16 @@
     (let ((slot-symbol
             (intern (upcase (param-case json-key)))))
       (if rest
-          `(,slot-symbol
-            :json-type ,json-type
-            :json-key ,json-key
-            :accessor ,slot-symbol
-            ,@rest)
+          (if (get-properties rest (list :accessor :reader :writer))
+              `(,slot-symbol
+                :json-type ,json-type
+                :json-key ,json-key
+                ,@rest)
+              `(,slot-symbol
+                :json-type ,json-type
+                :json-key ,json-key
+                :accessor ,slot-symbol
+                ,@rest))
           `(,slot-symbol
             :json-type ,json-type
             :json-key ,json-key
