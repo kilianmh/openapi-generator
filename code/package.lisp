@@ -10,7 +10,7 @@
   (:import-from #:cl-project
                 #:make-project)
   (:import-from #:alexandria
-                #:length= #:define-constant)
+                #:length= #:define-constant #:string-designator)
   (:import-from #:json-mop
                 #:json-serializable-class #:json-to-clos)
   (:import-from #:yason
@@ -22,7 +22,8 @@
                 #:from-file #:to-file #:trim #:trim-left
                 #:string-case)
   (:import-from #:com.inuoe.jzon
-                #:parse)
+                #:parse
+                #:stringify)
   (:import-from #:listopia
                 #:intersperse)
   (:import-from #:quri
@@ -43,8 +44,10 @@
                 #:get-by-json-pointer)
   (:import-from #:cl-hash-util
                 #:hash-get)
+  (:import-from #:parse-float
+                #:parse-float)
   (:export #:parse-openapi
            #:make-openapi-client
            #:*dereference*
-           #:convert-to-openapi-3
-           #:remove-empty-values))
+           #:dereference
+           #:convert-to-openapi-3))

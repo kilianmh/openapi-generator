@@ -118,38 +118,50 @@
                   (intern (upcase (param-case object-name)))))
               object-names))))
 
-(defgeneric get-lambda-list (required-parameters optional-parameters operation-object)
+(defgeneric get-lambda-list (required-parameters optional-parameters operation-object
+                             json-body-schema)
   (:documentation "Create the lambda list to be included in the generated function.")
-  (:method ((required-parameters list) (optional-parameters list) (operation-object operation))
+  (:method ((required-parameters list) (optional-parameters list) (operation-object operation)
+            json-body-schema)
     (flet ((default-parameter-p (item)
-             (case-using (function string-equal) item
-               (("OUTPUT" "SERVER" "CONTENT" "CONTENT-TYPE" "AUTHORIZATION" "HEADERS" "COOKIE" "QUERY")
-                t)
-               (otherwise nil))))
-      (remove nil
-              (append
-               (remove-if (function default-parameter-p) (object-name-symbols required-parameters))
-               (list (quote &key)
-                     (list (intern "QUERY") (intern "*QUERY*"))
-                     (list (intern "HEADERS") (intern "*HEADERS*"))
-                     (list (intern "COOKIE") (intern "*COOKIE*"))
-                     (list (intern "AUTHORIZATION") (intern "*AUTHORIZATION*"))
-                     (list (intern "SERVER") (intern "*SERVER*"))
-                     (list (intern "OUTPUT") (intern "*OUTPUT*")))
-               (let ((content-types
-                       (handler-case (hash-keys (content (request-body operation-object)))
-                         (unbound-slot ()
-                           nil))))
-                 (cond ((and content-types
-                             (null (length= 1 content-types)))
-                        (list (intern "CONTENT") (intern "CONTENT-TYPE")))
-                       ((or content-types (member "CONTENT"
-                                                  (object-name-symbols optional-parameters)
-                                                  :test (function string-equal)))
-                        (list (intern "CONTENT")))
-                       (t
-                        nil)))
-               (remove-if (function default-parameter-p) (object-name-symbols optional-parameters)))))))
+             (when (typep item (quote string-designator))
+               (case-using (function string-equal) item
+                 (("OUTPUT" "SERVER" "AUTHORIZATION" "HEADERS" "COOKIE" "QUERY")
+                  t)
+                 (otherwise nil)))))
+      (let ((title-symbol (slot-value-safe json-body-schema (quote title)))
+            (content-types
+              (handler-case (hash-keys (content (request-body operation-object)))
+                (unbound-slot ()
+                  nil))))
+        (remove-duplicates
+         (remove-if
+          (function default-parameter-p)
+          (remove nil
+                  (append
+                   (object-name-symbols required-parameters)
+                   (list (quote &key)
+                         (list (intern "QUERY") (intern "*QUERY*"))
+                         (list (intern "HEADERS") (intern "*HEADERS*"))
+                         (list (intern "COOKIE") (intern "*COOKIE*"))
+                         (list (intern "AUTHORIZATION") (intern "*AUTHORIZATION*"))
+                         (list (intern "SERVER") (intern "*SERVER*"))
+                         (list (intern "OUTPUT") (intern "*OUTPUT*")))
+                   (when title-symbol (list (intern-param title-symbol)))
+                   (when json-body-schema
+                     (let ((properties (slot-value-safe json-body-schema (quote properties))))
+                       (when properties
+                         (intern-param (hash-keys properties)))))
+                   (cond ((and content-types
+                               (null (length= 1 content-types)))
+                          (list (intern "CONTENT") (intern "CONTENT-TYPE")))
+                         ((or content-types (member "CONTENT"
+                                                    (object-name-symbols optional-parameters)
+                                                    :test (function string-equal)))
+                          (list (intern "CONTENT")))
+                         (t
+                          nil))
+                   (object-name-symbols optional-parameters)))))))))
 
 (defgeneric get-description (operation-object)
   (:documentation "Extract documentation slots summary and description from operation object")
@@ -328,6 +340,104 @@ symbols will have numbers values are converted into strings at run time.")
         (append (list ,@standard-headers)
                 (when ,(intern "HEADERS") ,(intern "HEADERS")))))))
 
+(defmethod json-body-schema ((operation operation))
+  "Return application/json media type or nil."
+  (let ((request-body (slot-value-safe operation (quote request-body))))
+    (when request-body
+      (gethash "application/json"
+               (content request-body)))))
+
+(defgeneric type-conversion (json-type)
+  (:documentation "Convert json-type string or list of strings to lisp types.")
+  (:method ((json-type string))
+    (case-using (function string-equal) json-type
+      (null (list (quote or) (quote json-null) (quote null)))
+      (number (list (quote or) (quote json-number) (quote number)))
+      (boolean (list (quote or) (quote json-true) (quote json-false) (quote null) (quote t)))
+      (string (quote string))
+      (array (list (quote or) (quote json-array) (quote list)))
+      (object (list (quote or) (quote json-object) (quote hash-table)))))
+  (:method ((json-type vector))
+    (let ((type-list
+            (mapcar (function type-conversion)
+                    (coerce json-type (quote list)))))
+      (if type-list
+          (cons (quote or)
+                type-list)
+          t)))
+  (:method ((json-type null))
+    t))
+
+(defmethod json-content ((schema schema))
+  "Generate the code to validate request-body or generate it according to the spec."
+  (let ((intern-content
+          (intern "CONTENT"))
+        (title
+          (intern-param (slot-value-safe schema (quote title))))
+        (properties
+          (slot-value-safe schema (quote properties)))
+        (required-properties
+          (slot-value-safe schema (quote required)))
+        (type-list
+          (type-conversion (slot-value-safe schema (quote type)))))
+    (declare (symbol title) (type (or hash-table null) properties)
+             (type (or cons null) required-properties))
+    (labels ((required (name schema)
+               (declare (schema schema) (string name))
+               `((com.inuoe.jzon:write-key* ,name)
+                 (com.inuoe.jzon:write-value*
+                  (progn (assuref ,(intern-param name)
+                                  ,(type-conversion (slot-value-safe schema (quote type))))
+                         (or (ignore-errors (parse ,(intern-param name)))
+                             ,(intern-param name))))))
+             (optional (name schema)
+               (declare (schema schema) (string name))
+               (let ((name-symbol (intern-param name)))
+                 `((when ,name-symbol
+                     (com.inuoe.jzon:write-key* ,name)
+                     (com.inuoe.jzon:write-value*
+                      (assuref ,name-symbol
+                               ,(type-conversion (slot-value-safe schema (quote type)))))))))
+             (optional-or-required (property)
+               (declare (string property))
+               (if (member property required-properties :test (function string-equal))
+                   (funcall (function required) property (gethash property properties))
+                   (funcall (function optional) property (gethash property properties)))))
+      (remove nil `(cond (,intern-content
+                          ,(if (and (atom type-list)
+                                    (string-equal type-list (quote string)))
+                               `(assuref ,intern-content string)
+                               `(if (not (stringp (assuref ,intern-content ,type-list)))
+                                    (stringify ,intern-content)
+                                    ,intern-content)))
+                         ,(when title
+                            `(,title
+                              ,(if (and (atom type-list)
+                                        (string-equal type-list (quote string)))
+                                   `(assuref ,title string)
+                                   `(if (not (stringp (assuref ,title ,type-list)))
+                                        (stringify ,title)
+                                        ,title))))
+                         ,(when properties
+                            (let ((property-names (delete "content"
+                                                          (hash-keys properties)
+                                                          :test (function string=))))
+                              (declare (type (or cons null) property-names))
+                              (when (> (list-length property-names) 0)
+                                `((or ,@(intern-param
+                                         property-names))
+                                  (let ((s (make-string-output-stream)))
+                                    (declare (stream s))
+                                    (com.inuoe.jzon:with-writer* (:stream s :pretty t)
+                                      (com.inuoe.jzon:with-object*
+                                          ,@(mapcan (function optional-or-required)
+                                                    property-names)))
+                                    (let ((output
+                                            (get-output-stream-string s)))
+                                      (declare (string output))
+                                      (unless (string= "{}" output)
+                                        output))))))))))))
+
 (defgeneric generate-function (api path operation-type)
   (:documentation "Generate functions for all types of http request")
   (:method ((api openapi) (path string) (operation-type symbol))
@@ -336,7 +446,10 @@ symbols will have numbers values are converted into strings at run time.")
            (all-parameters   (collect-parameters path-object operation-type))
            (required-params  (get-required-parameter all-parameters))
            (optional-params  (get-optional-parameter all-parameters))
-           (lambda-list      (get-lambda-list required-params optional-params operation-object))
+           (json-body        (json-body-schema operation-object))
+           (json-body-schema (slot-value-safe json-body (quote schema)))
+           (lambda-list      (get-lambda-list required-params optional-params operation-object
+                                              json-body-schema))
 	   (description      (get-description operation-object))
            (primary-uri      (get-primary-uri api))
            (uri-path         (get-path path all-parameters primary-uri))
@@ -356,7 +469,9 @@ symbols will have numbers values are converted into strings at run time.")
                               :path ,uri-path
                               :query ,uri-query))
 	           ,@(if (member (intern "CONTENT") lambda-list)
-                         `(:content ,(intern "CONTENT"))
+                         `(:content ,(if json-body
+                                         (json-content json-body-schema)
+                                         (intern "CONTENT")))
                          (values))
 	           :method (quote ,(intern (symbol-name operation-type)))
 	           :headers ,(get-headers all-parameters operation-object))))

@@ -7,7 +7,7 @@
   :depends-on (#:str #:cl-hash-util #:cl-semver #:pathname-utils
                #:json-mop #:yason #:com.inuoe.jzon #:cl-project
                #:listopia #:alexandria #:serapeum #:quri #:dexador
-               #:cl-json-pointer #:moptilities)
+               #:cl-json-pointer #:moptilities #:parse-float)
   :pathname "code/"
   :serial t
   :components ((:file "package")

@@ -101,3 +101,67 @@
                       (funcall (function hash-copy-recursive) v)
                       v)))
     new-hash))
+
+(defgeneric intern-param (s)
+  (:documentation "Convert string or list of strings to param-cased symbol(s).")
+  (:method ((s string))
+    (intern (upcase (param-case s))))
+  (:method ((s null))
+    nil)
+  (:method ((s vector))
+    (mapcar (function intern-param) (coerce s (quote list))))
+  (:method ((s list))
+    (mapcar (function intern-param) s)))
+
+(deftype json-string ()
+  (quote (and string (satisfies valid-json-p))))
+
+(defun json-true-p (s)
+  "Predicate for valid json true"
+  (string-equal "true" s))
+
+(deftype json-true ()
+  (quote (and string (satisfies json-true-p))))
+
+(defun json-false-p (s)
+  "Predicate for valid json false"
+  (string-equal "false" s))
+
+(deftype json-false ()
+  (quote (and string (satisfies json-false-p))))
+
+(defun json-null-p (s)
+  "Predicate for valid json null"
+  (string-equal "null" s))
+
+(deftype json-null ()
+  (quote (and string (satisfies json-null-p))))
+
+(defun json-number-p (s)
+  "Predicate for valid json number (string)"
+  (when (ignore-errors (parse-float s))
+    t))
+
+(deftype json-number ()
+  (quote (and string (satisfies json-number-p))))
+
+(defun integer-string-p (s)
+  "Predicate for valid json number (string)"
+  (integerp (ignore-errors (parse-integer s))))
+
+(deftype integer-string ()
+  (quote (and string (satisfies integer-string-p))))
+
+(defun json-array-p (s)
+  "Predicate for valid json array (string)"
+  (vectorp (ignore-errors (parse s))))
+
+(deftype json-array ()
+  (quote (and string (satisfies json-array-p))))
+
+(defun json-object-p (s)
+  "Predicate for valid json array (string)"
+  (hash-table-p (ignore-errors (parse s))))
+
+(deftype json-object ()
+  (quote (and string (satisfies json-object-p))))
