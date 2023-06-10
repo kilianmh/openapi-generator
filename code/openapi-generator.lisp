@@ -33,17 +33,17 @@
     (let ((result-list
             ()))
       (maphash (function (lambda (path path-object)
-                    (declare (ignore path))
-                    (mapc (function (lambda (operator)
-                            (multiple-value-bind (value exist-p)
-                                (slot-value-safe (slot-value path-object operator)
-                                                 slot)
-                              (unless exist-p
-                                (return-from collect-alias-exports))
-                              (push (upcase (param-case value))
-                                    result-list))))
-                          (collect-path-types path-object))))
-                  (paths api))
+                 (declare (ignore path))
+                 (mapc (function (lambda (operator)
+                         (multiple-value-bind (value exist-p)
+                             (slot-value-safe (slot-value path-object operator)
+                                              slot)
+                           (unless exist-p
+                             (return-from collect-alias-exports))
+                           (push (upcase (param-case value))
+                                 result-list))))
+                       (collect-path-types path-object))))
+               (paths api))
       result-list)))
 
 (defgeneric generate-defpackage (name api &key alias)

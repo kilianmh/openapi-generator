@@ -14,7 +14,7 @@
              (string first-server-object)
              (hash-table
               (let* ((first-url
-                      (gethash "url" first-server-object))
+                       (gethash "url" first-server-object))
                      (curly-brace-location
                        (cl:search "{" first-url)))
                 (if curly-brace-location
@@ -115,7 +115,7 @@
   (:method ((objects list))
     (let ((object-names (mapcar (function name) objects)))
       (mapcar (function (lambda (object-name)
-                  (intern (upcase (param-case object-name)))))
+                (intern (upcase (param-case object-name)))))
               object-names))))
 
 (defgeneric get-lambda-list (required-parameters optional-parameters operation-object
@@ -331,7 +331,7 @@ symbols will have numbers values are converted into strings at run time.")
                      :test (function string-equal))))
           (standard-headers
             `((cl:cons "Authorization" ,(intern "AUTHORIZATION"))
-                   (cl:cons "cookie" ,(intern "COOKIE")))))
+              (cl:cons "cookie" ,(intern "COOKIE")))))
       (when content-type-list
         (push content-type-list standard-headers))
       (when generated-alist
@@ -430,8 +430,8 @@ symbols will have numbers values are converted into strings at run time.")
                                     (declare (stream s))
                                     (com.inuoe.jzon:with-writer* (:stream s :pretty t)
                                       (com.inuoe.jzon:with-object*
-                                          ,@(mapcan (function optional-or-required)
-                                                    property-names)))
+                                        ,@(mapcan (function optional-or-required)
+                                                  property-names)))
                                     (let ((output
                                             (get-output-stream-string s)))
                                       (declare (string output))
