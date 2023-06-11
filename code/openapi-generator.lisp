@@ -53,14 +53,14 @@
          (:use)
        (:import-from #:cl
                      #:append #:declaim #:declare #:ignorable #:optimize #:speed #:space #:safety #:debug #:compilation-speed #:defparameter #:null
-                     #:case #:array #:write-to-string #:setf #:defparameter #:defun #:fdefinition #:t #:nil #:&key #:when #:let* #:or #:if #:cdr #:assoc #:quote #:string-equal #:cons #:list #:cond #:find #:warn #:boundp #:symbol-value #:string #:integer #:number #:boolean #:let #:unless #:make-string-output-stream #:get-output-stream-string #:string= #:hash-table #:stream #:typep #:progn #:ignore-errors #:stringp #:not)
+                     #:case #:array #:write-to-string #:setf #:defparameter #:defun #:fdefinition #:t #:nil #:&key #:when #:let* #:or #:if #:cdr #:assoc #:quote #:string-equal #:cons #:list #:cond #:find #:warn #:boundp #:symbol-value #:string #:integer #:number #:boolean #:let #:unless #:make-string-output-stream #:get-output-stream-string #:string= #:hash-table #:stream #:typep #:progn #:ignore-errors #:stringp #:not #:otherwise)
        (:import-from #:quri #:uri #:make-uri #:render-uri #:uri-scheme #:uri-host)
        (:import-from #:str #:concat)
        (:import-from #:com.inuoe.jzon #:parse #:with-writer* #:write-key* #:write-value* #:stringify)
        (:import-from #:openapi-generator #:remove-empty-values #:json-null #:json-number #:json-array #:json-object #:json-false #:json-true)
        (:import-from #:dexador #:request)
        (:import-from #:serapeum #:assuref)
-       (:export #:*authorization* #:*headers* #:*cookie* #:*output* #:*server*
+       (:export #:*authorization* #:*headers* #:*cookie* #:*parse* #:*server*
                 ,@(append (when (member :path alias)
                             (collect-function-names api :param-case nil))
                           (when (member :summary alias)
@@ -110,11 +110,11 @@
                (paths api))
       result-list)))
 
-(defgeneric generate-parameters (&key query headers authorization cookie output server)
+(defgeneric generate-parameters (&key query headers authorization cookie parse server)
   (:documentation "Creates code to be included in main.lisp for parameters")
-  (:method (&key query headers authorization cookie output server)
+  (:method (&key query headers authorization cookie parse server)
     (cl:format nil "~{~S~%~}"
-               (list `(defparameter ,(intern "*OUTPUT*") ,(if output output :hash-table))
+               (list `(defparameter ,(intern "*PARSE*") ,(when parse parse))
                      `(defparameter ,(intern "*AUTHORIZATION*") ,authorization)
                      `(defparameter ,(intern "*SERVER*") ,server)
                      `(defparameter ,(intern "*COOKIE*") ,cookie)
@@ -154,9 +154,9 @@ Prefered alias source is operation-id. Last resort option is path.")
           (push :path result-list))
         result-list))))
 
-(defgeneric generate-code (api name &key output headers authorization server cookie alias)
+(defgeneric generate-code (api name &key parse headers authorization server cookie alias)
   (:documentation "Generate all code to be included in the main.lisp file. Includes defpackage + functions + setf alias")
-  (:method (api name &key (output :hash-table) headers authorization server cookie alias)
+  (:method (api name &key parse headers authorization server cookie alias)
     (let ((alias-list
             (check-api-slots api alias)))
       (concat
@@ -166,7 +166,7 @@ Prefered alias source is operation-id. Last resort option is path.")
        (string #\Newline)(string #\Newline)
        (string #\Newline)(string #\Newline)
        (generate-parameters :headers headers :authorization authorization :cookie cookie
-                            :output output :server server)
+                            :parse parse :server server)
        (string #\Newline)(string #\Newline)
        (cl:format nil "~{~W~% ~}" (generate-function-code api name))
        (when (member :operation-id alias-list)
@@ -206,13 +206,13 @@ Prefered alias source is operation-id. Last resort option is path.")
 
 (defun make-openapi-client (system-name
                             &key
-                              server (output :hash-table) headers authorization cookie
+                              server parse headers authorization cookie
                               (alias (list :operation-id)) (system-directory :library) (load-system t)
                               openapi (api-name system-name) url source-directory collection-id content
                               (dereference *dereference*))
   "Creates Openapi client by combining a project template with generated code.
 Source options are url, source-directory, collection-id, or openapi (openapi class instance).
-The options server, output, headers, authorization, cookie, content are stored in the library code
+The options server, parse, headers, authorization, cookie, content are stored in the library code
 as dynamic parameters.."
   (let* ((project-pathname
            (make-pathname :directory (concat (trim-left
@@ -247,7 +247,7 @@ as dynamic parameters.."
                            :content content))
         (intern (upcase system-name))
         :headers headers :authorization authorization :cookie cookie
-        :output output :alias alias :server server)
+        :parse parse :alias alias :server server)
        system))
     (load-asd pathname-asd :name system-name)
     (when load-system

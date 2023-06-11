@@ -126,7 +126,7 @@
     (flet ((default-parameter-p (item)
              (when (typep item (quote string-designator))
                (case-using (function string-equal) item
-                 (("OUTPUT" "SERVER" "AUTHORIZATION" "HEADERS" "COOKIE" "QUERY")
+                 (("PARSE" "SERVER" "AUTHORIZATION" "HEADERS" "COOKIE" "QUERY")
                   t)
                  (otherwise nil)))))
       (let ((title-symbol (slot-value-safe json-body-schema (quote title)))
@@ -146,7 +146,7 @@
                          (list (intern "COOKIE") (intern "*COOKIE*"))
                          (list (intern "AUTHORIZATION") (intern "*AUTHORIZATION*"))
                          (list (intern "SERVER") (intern "*SERVER*"))
-                         (list (intern "OUTPUT") (intern "*OUTPUT*")))
+                         (list (intern "PARSE") (intern "*PARSE*")))
                    (when title-symbol (list (intern-param title-symbol)))
                    (when json-body-schema
                      (let ((properties (slot-value-safe json-body-schema (quote properties))))
@@ -438,6 +438,22 @@ symbols will have numbers values are converted into strings at run time.")
                                       (unless (string= "{}" output)
                                         output))))))))))))
 
+(defmethod get-response-type ((operation operation))
+  "Get response type. Return value can be either :json or nil"
+  (maphash (lambda (key value)
+             (declare (ignore key))
+             (let ((content (slot-value-safe value (quote content))))
+               (declare (type (or null hash-table) content))
+               (when content
+                 (let ((hash-keys
+                         (hash-keys content)))
+                   (declare (list hash-keys))
+                   (mapc (lambda (item)
+                           (when (str:containsp "application/json" item)
+                             (return-from get-response-type :json)))
+                         hash-keys)))))
+           (slot-value operation (quote responses))))
+
 (defgeneric generate-function (api path operation-type)
   (:documentation "Generate functions for all types of http request")
   (:method ((api openapi) (path string) (operation-type symbol))
@@ -450,31 +466,43 @@ symbols will have numbers values are converted into strings at run time.")
            (json-body-schema (slot-value-safe json-body (quote schema)))
            (lambda-list      (get-lambda-list required-params optional-params operation-object
                                               json-body-schema))
+           (response-type    (get-response-type operation-object))
 	   (description      (get-description operation-object))
            (primary-uri      (get-primary-uri api))
            (uri-path         (get-path path all-parameters primary-uri))
-           (uri-query        (get-query all-parameters)))
+           (uri-query        (get-query all-parameters))
+           (intern-response  (intern "RESPONSE"))
+           (intern-content   (intern "CONTENT"))
+           (intern-server-uri (intern "SERVER-URI")))
       `(defun ,(intern (function-name path operation-type :param-case nil)) ,lambda-list
 	 ,description
          ,@(assure-required required-params)
          ,@(assure-optional optional-params)
-         (let* ((,(intern "SERVER-URI")
+         (let* ((,intern-server-uri
                   (uri (or ,(intern "SERVER")
                            ,primary-uri)))
-                (,(intern "RESPONSE")
+                (,intern-response
                   (request
                    (render-uri
-	            (make-uri :scheme (uri-scheme ,(intern "SERVER-URI"))
-                              :host (uri-host ,(intern "SERVER-URI"))
+	            (make-uri :scheme (uri-scheme ,intern-server-uri)
+                              :host (uri-host ,intern-server-uri)
                               :path ,uri-path
                               :query ,uri-query))
-	           ,@(if (member (intern "CONTENT") lambda-list)
+	           ,@(if (member intern-content lambda-list)
                          `(:content ,(if json-body
                                          (json-content json-body-schema)
-                                         (intern "CONTENT")))
+                                         intern-content))
                          (values))
 	           :method (quote ,(intern (symbol-name operation-type)))
 	           :headers ,(get-headers all-parameters operation-object))))
-           (case ,(intern "OUTPUT")
-             (:json ,(intern "RESPONSE"))
-             (:hash-table (parse ,(intern "RESPONSE")))))))))
+           ,(if response-type
+                (case response-type
+                  (:json `(if ,(intern "PARSE")
+                              (parse ,intern-response)
+                              ,intern-response))
+                  (otherwise `(case parse
+                                (:json (parse ,intern-response))
+                                (otherwise ,intern-response))))
+                `(case parse
+                   (:json (parse ,intern-response))
+                   (otherwise ,intern-response))))))))
