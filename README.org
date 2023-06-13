@@ -6,7 +6,7 @@ OpenAPI-generator is an api client system generator.
 - Generation of OpenAPI [[https://asdf.common-lisp.dev/][ASDF]]/[[https://www.quicklisp.org][Quicklisp]]-loadable projects within one command
 - Support for path, (arbitrary) query, (arbitrary) header, (json) content parameters
 - Each system has dynamic variables for changing default server, query, headers,
-  authentication, cookie, output
+  authentication, cookie, parse
 - Multiple function alias options (operation-id, path, summary, description)
 - Supported file formats / inputs: [[https://www.json.org][JSON]], [[https://yaml.org/][YAML]], [[https://url.spec.whatwg.org/][URL]], local file, project-id on [[https://apis.guru/][apis.guru]].
 - Conversion of an OpenAPI spec into CLOS object -> explore API within inspector
@@ -42,7 +42,7 @@ Then put this in the REPL:
    "codeberg"
    :url "https://codeberg.org/swagger.v1.json"
    :server "https://codeberg.org/api/v1"
-   :system-directory :library)
+   :parse t)
 #+end_src
 
 This creates a client system to access the
@@ -85,7 +85,7 @@ Can be turned off for faster parsing.
 #+begin_src lisp
     make-openapi-client (system-name
                          &key
-                         (server *server*) (output *output*) (query *query*) (headers *headers*)
+                         (server *server*) (parse *parse*) (query *query*) (headers *headers*)
                          (authorization *authorization*) (cookie *cookie*)
                          (alias (list :operation-id)) (system-directory :temporary) (load-system t)
                          openapi (api-name system-name) url source-directory collection-id
@@ -104,8 +104,19 @@ Options:
 Keyword-options
 - :temporary -> default, (uiop:temporary-directory)
 - :library  -> openapi-generator/projects
-***** output
-default: :hash-table, alternative: :json.
+***** parse
+default: nil, alternative: t, :json.
+
+#+begin_src lisp
+  (openapi-generator:make-openapi-client
+   "wikitionary-api"
+   :url "https://github.com/shreyashag/openapi-specs/raw/main/thesaurus.yaml"
+   :parse t)
+#+end_src
+#+begin_src lisp
+  (wikitionary-api:find-word "oligopoly")
+#+end_src
+
 ***** server
 set default server variable in system (e.g. if server not/incorrect in spec
 file)
@@ -164,7 +175,8 @@ parameters.
    :read-only-function-args ;; request-body title (only if existing in spec)
    (serapeum:dict
     "sender" "STM9EQRAB3QAKF8NKTP15WJT7VHH4EWG3DJB4W29"
-    "arguments" (list "0x0100000000000000000000000000000095")))
+    "arguments" (list "0x0100000000000000000000000000000095"))
+   :parse t)
 #+end_src
 #+begin_src lisp
   ;; first level of the request-body objects can be supplied as lisp datastructures
@@ -207,8 +219,10 @@ call. This is equivalent to adding it to the headers.
 #+end_src
 ***** collection-id
 #+begin_src lisp
-  (openapi-generator:make-openapi-client "opendatasoft"
-                                         :collection-id "opendatasoft.com")
+  (openapi-generator:make-openapi-client
+   "opendatasoft"
+   :collection-id "opendatasoft.com"
+   :parse nil)
 #+end_src
 This creates the api client for opendatasoft by accessing apis.guru forthe URL.
 Here an example query:
