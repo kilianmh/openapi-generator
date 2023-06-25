@@ -2,9 +2,11 @@
 
 (json-class openapi nil
             (("openapi" :string
-                        :documentation "REQUIRED. This string MUST be the version number of the OpenAPI Specification that the OpenAPI document uses. The openapi field SHOULD be used by tooling to interpret the OpenAPI document. This is not related to the API info.version string.")
+                        :required t
+                        :documentation "This string MUST be the version number of the OpenAPI Specification that the OpenAPI document uses. The openapi field SHOULD be used by tooling to interpret the OpenAPI document. This is not related to the API info.version string.")
              ("info" info
-                     :documentation "REQUIRED. Provides metadata about the API. The metadata MAY be used by tooling as required.")
+                     :required t
+                     :documentation "Provides metadata about the API. The metadata MAY be used by tooling as required.")
              ("servers" :any
                         :documentation "An array of Server Objects, which provide connectivity information to a target server. If the servers property is not provided, or is an empty array, the default value would be a Server Object with a url value of /.")
              ("security" :any :documentation "A declaration of which security mechanisms can be used across the API. The list of values includes alternative security requirement objects that can be used. Only one of the security requirement objects need to be satisfied to authorize a request. Individual operations can override this definition. To make security optional, an empty security requirement ({}) can be included in the array.")
@@ -36,7 +38,8 @@ Holds the relative paths to the individual endpoints and their operations. The p
 
 (json-class info nil
             (("title" :string
-                      :documentation "REQUIRED. The title of the API.")
+                      :documentation "The title of the API."
+                      :required t)
              ("summary" :string
                         :documentation "A short summary of the API.")
              ("description" :string
@@ -48,7 +51,8 @@ Holds the relative paths to the individual endpoints and their operations. The p
              ("license" :any
                         :documentation "The license information for the exposed API.")
              ("version" :string
-                        :documentation "REQUIRED. The version of the OpenAPI document (which is distinct from the OpenAPI Specification version or the API implementation version)."))
+                        :required t
+                        :documentation "The version of the OpenAPI document (which is distinct from the OpenAPI Specification version or the API implementation version)."))
             (:documentation "The object provides metadata about the API. The metadata MAY be used by the clients if needed, and MAY be presented in editing or documentation generation tools for convenience."))
 
 (defmethod print-object ((object info) stream)
@@ -78,7 +82,8 @@ Holds the relative paths to the individual endpoints and their operations. The p
 
 (json-class license nil
             (("name" :string
-                     :documentation "REQUIRED. The license name used for the API.")
+                     :required t
+                     :documentation "The license name used for the API.")
              ("identifier" :string
                            :documentation "An SPDX license expression for the API. The identifier field is mutually exclusive of the url field.")
              ("url" :string
@@ -92,7 +97,8 @@ Holds the relative paths to the individual endpoints and their operations. The p
 
 (json-class server nil
             (("url" :string
-                    :documentation "REQUIRED. A URL to the target host. This URL supports Server Variables and MAY be relative, to indicate that the host location is relative to the location where the OpenAPI document is being served. Variable substitutions will be made when a variable is named in {brackets}.")
+                    :required t
+                    :documentation "A URL to the target host. This URL supports Server Variables and MAY be relative, to indicate that the host location is relative to the location where the OpenAPI document is being served. Variable substitutions will be made when a variable is named in {brackets}.")
              ("description" :string
                             :documentation "An optional string describing the host designated by the URL. CommonMark syntax MAY be used for rich text representation.")
              ("variables" (:hash-table server-variable)
@@ -107,7 +113,8 @@ Holds the relative paths to the individual endpoints and their operations. The p
             (("enum" (:list :string)
                      :documentation "An enumeration of string values to be used if the substitution options are from a limited set. The array MUST NOT be empty.")
              ("default" :string
-                        :documentation "REQUIRED. The default value to use for substitution, which SHALL be sent if an alternate value is not supplied. Note this behavior is different than the Schema Object’s treatment of default values, because in those cases parameter values are optional. If the enum is defined, the value MUST exist in the enum’s values.")
+                        :required t
+                        :documentation "The default value to use for substitution, which SHALL be sent if an alternate value is not supplied. Note this behavior is different than the Schema Object’s treatment of default values, because in those cases parameter values are optional. If the enum is defined, the value MUST exist in the enum’s values.")
              ("description" :string
                             :documentation "An optional description for the server variable. CommonMark syntax MAY be used for rich text representation."))
             (:documentation "An object representing a Server Variable for server URL template substitution."))
@@ -225,7 +232,8 @@ The Responses Object MUST contain at least one response code, and if only one re
             (("description" :string
                             :documentation "A description of the target documentation. CommonMark syntax MAY be used for rich text representation.")
              ("url" :string
-                    :documentation "REQUIRED. The URL for the target documentation. This MUST be in the form of a URL."))
+                    :required t
+                    :documentation "The URL for the target documentation. This MUST be in the form of a URL."))
             (:documentation "Allows referencing an external resource for extended documentation."))
 
 (defmethod print-object ((object external-documentation) stream)
@@ -234,13 +242,15 @@ The Responses Object MUST contain at least one response code, and if only one re
 
 (json-class parameter ()
             (("name" :string
-                     :documentation "REQUIRED. The name of the parameter. Parameter names are case sensitive.
+                     :required t
+                     :documentation "The name of the parameter. Parameter names are case sensitive.
 
     If in is \"path\", the name field MUST correspond to a template expression occurring within the path field in the Paths Object. See Path Templating for further information.
     If in is \"header\" and the name field is \"Accept\", \"Content-Type\" or \"Authorization\", the parameter definition SHALL be ignored.
     For all other cases, the name corresponds to the parameter name used by the in property.")
              ("in" :string
-                   :documentation "REQUIRED. The location of the parameter. Possible values are \"query\", \"header\", \"path\" or \"cookie\".")
+                   :required t
+                   :documentation "The location of the parameter. Possible values are \"query\", \"header\", \"path\" or \"cookie\".")
              ("description" :string
                             :documentation "A brief description of the parameter. This could contain examples of use. CommonMark syntax MAY be used for rich text representation.")
              ("required" :any ;; :bool
@@ -294,7 +304,8 @@ For more complex scenarios, the content property can define the media type and s
              ("required" :any
                          :documentation "Determines if the request body is required in the request. Defaults to false.") ;; bool
              ("content"  (:hash-table media-type)
-                         :documentation "REQUIRED. The content of the request body. The key is a media type or media type range and the value describes it. For requests that match multiple keys, only the most specific key is applicable. e.g. text/plain overrides text/*"))
+                         :required t
+                         :documentation "The content of the request body. The key is a media type or media type range and the value describes it. For requests that match multiple keys, only the most specific key is applicable. e.g. text/plain overrides text/*"))
             (:documentation "Describes a single request body."))
 
 (defmethod print-object ((object request-body) stream)
@@ -331,7 +342,8 @@ For more complex scenarios, the content property can define the media type and s
 
 (json-class response nil
             (("description" :string
-                            :documentation "REQUIRED. A description of the response. CommonMark syntax MAY be used for rich text representation.")
+                            :required t
+                            :documentation "A description of the response. CommonMark syntax MAY be used for rich text representation.")
              ("headers" (:hash-table header)
                         :documentation "Maps a header name to its definition. [RFC7230] states header names are case insensitive. If a response header is defined with the name \"Content-Type\", it SHALL be ignored.")
              ("content" (:hash-table media-type)
@@ -405,7 +417,8 @@ A linked operation MUST be identified using either an operationRef or operationI
 
 (json-class tag nil
             (("name" :string
-                     :documentation "REQUIRED. The name of the tag.")
+                     :required t
+                     :documentation "The name of the tag.")
              ("description" :string
                             :documentation "A description for the tag. CommonMark syntax MAY be used for rich text representation.")
              ("externalDocs" external-documentation
@@ -418,7 +431,8 @@ A linked operation MUST be identified using either an operationRef or operationI
 
 (json-class reference nil
             (("$ref" :string
-                     :documentation "REQUIRED. The reference identifier. This MUST be in the form of a URI.")
+                     :required t
+                     :documentation "The reference identifier. This MUST be in the form of a URI.")
              ("summary" :string
                         :documentation "A short summary which by default SHOULD override that of the referenced component. If the referenced object-type does not allow a summary field, then this field has no effect.")
              ("description" :string
@@ -764,7 +778,8 @@ While composition offers model extensibility, it does not imply a hierarchy betw
 ;; Discriminator Object (only allowed if oneOf, anyOf, allOf)
 (json-class discriminator nil
             (("propertyName" :string
-                             :documentation "REQUIRED. The name of the property in the payload that will hold the discriminator value.")
+                             :required t
+                             :documentation "The name of the property in the payload that will hold the discriminator value.")
              ("mapping" (:hash-table :string)
                         :documentation "An object to hold mappings between payload values and schema names or references."))
             (:documentation "When request bodies or response payloads may be one of a number of different schemas, a discriminator object can be used to aid in serialization, deserialization, and validation. The discriminator is a specific object in a schema which is used to inform the consumer of the document of an alternative schema based on the value associated with it.
@@ -796,21 +811,22 @@ When using arrays, XML element names are not inferred (for singular/plural forms
 
 (json-class security-scheme nil
             (("type" :string :reader security-scheme-type
-                     :documentation "REQUIRED. The type of the security scheme. Valid values are \"apiKey\", \"http\", \"mutualTLS\", \"oauth2\", \"openIdConnect\".")
+                     :required t
+                     :documentation "The type of the security scheme. Valid values are \"apiKey\", \"http\", \"mutualTLS\", \"oauth2\", \"openIdConnect\".")
              ("description" :string
                             :documentation "A description for security scheme. CommonMark syntax MAY be used for rich text representation.")
              ("name" :string
-                     :documentation "REQUIRED. The name of the header, query or cookie parameter to be used.")
+                     :documentation "The name of the header, query or cookie parameter to be used.")
              ("in" :string
-                   :documentation "REQUIRED. The location of the API key. Valid values are \"query\", \"header\" or \"cookie\".")
+                   :documentation "The location of the API key. Valid values are \"query\", \"header\" or \"cookie\".")
              ("scheme" :string
-                       :documentation "REQUIRED. The name of the HTTP Authorization scheme to be used in the Authorization header as defined in [RFC7235]. The values used SHOULD be registered in the IANA Authentication Scheme registry.")
+                       :documentation "The name of the HTTP Authorization scheme to be used in the Authorization header as defined in [RFC7235]. The values used SHOULD be registered in the IANA Authentication Scheme registry.")
              ("bearerFormat" :string
                              :documentation "A hint to the client to identify how the bearer token is formatted. Bearer tokens are usually generated by an authorization server, so this information is primarily for documentation purposes.")
              ("flows" o-auth-flow
-                      :documentation "REQUIRED. An object containing configuration information for the flow types supported.")
+                      :documentation "An object containing configuration information for the flow types supported.")
              ("openIdConnectUrl" :string
-                                 :documentation "REQUIRED. OpenId Connect URL to discover OAuth2 configuration values. This MUST be in the form of a URL. The OpenID Connect standard requires the use of TLS.")
+                                 :documentation "OpenId Connect URL to discover OAuth2 configuration values. This MUST be in the form of a URL. The OpenID Connect standard requires the use of TLS.")
              ("$ref" :string))
             (:documentation "Defines a security scheme that can be used by the operations.
 
@@ -834,13 +850,16 @@ Supported schemes are HTTP authentication, an API key (either as a header, a coo
 
 (json-class o-auth-flow nil
             (("authorizationUrl" :string
-                                 :documentation "REQUIRED. The authorization URL to be used for this flow. This MUST be in the form of a URL. The OAuth2 standard requires the use of TLS.")
+                                 :required t
+                                 :documentation "The authorization URL to be used for this flow. This MUST be in the form of a URL. The OAuth2 standard requires the use of TLS.")
              ("tokenUrl" :string
-                         :documentation "REQUIRED. The token URL to be used for this flow. This MUST be in the form of a URL. The OAuth2 standard requires the use of TLS.")
+                         :required t
+                         :documentation "The token URL to be used for this flow. This MUST be in the form of a URL. The OAuth2 standard requires the use of TLS.")
              ("refreshUrl" :string
                            :documentation "The URL to be used for obtaining refresh tokens. This MUST be in the form of a URL. The OAuth2 standard requires the use of TLS.")
              ("scopes" (:hash-table :string)
-                       :documentation "REQUIRED. The available scopes for the OAuth2 security scheme. A map between the scope name and a short description for it. The map MAY be empty."))
+                       :required t
+                       :documentation "The available scopes for the OAuth2 security scheme. A map between the scope name and a short description for it. The map MAY be empty."))
             (:documentation "Configuration details for a supported OAuth Flow"))
 
 (defmethod print-object ((object o-auth-flow) stream)
