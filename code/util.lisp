@@ -1,5 +1,20 @@
 (in-package :openapi-generator)
 
+(defun to-file (pathname s)
+  "Adapted from cl-str.
+Write string `s' to file `pathname'. If the file does not exist, create it (use `:if-does-not-exist'), if it already exists, replace its content (`:if-exists').
+
+Returns the string written to file."
+  (with-open-file (f pathname :direction :output :if-exists :supersede :if-does-not-exist :create :external-format :utf-8)
+    (write-sequence s f)))
+
+(defun from-file (pathname)
+  "Adapted from cl-str.
+Read the file and return its content as a string.
+
+It simply uses uiop:read-file-string. There is also uiop:read-file-lines."
+  (funcall (function uiop:read-file-string) pathname :external-format :utf-8))
+
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun expand-slot (json-key json-type rest)
     (let ((slot-symbol

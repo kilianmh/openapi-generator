@@ -58,15 +58,15 @@ Supported are: url / apis-guru / path / name (in openapi-generator/data folder)"
       (if (starts-with-p "{" file)
           (case (get-openapi-version file)
             (openapi-2.0
-             (str:to-file target-directory
-                          (convert-to-openapi-3 :content file
-                                                :content-type "json")))
+             (to-file target-directory
+                      (convert-to-openapi-3 :content file
+                                            :content-type "json")))
             ((openapi-3.0 openapi-3.1)
              file)
             (otherwise
              (error "Unsupported Openapi Version")))
-          (str:to-file target-directory (convert-to-openapi-3 :content file
-                                                              :content-type "yaml"))))))
+          (to-file target-directory (convert-to-openapi-3 :content file
+                                                          :content-type "yaml"))))))
 
 (defgeneric parse-directory (source-directory target-directory)
   (:documentation "Parse file from source directory to target-directory as usable JSON Openapi 3.X")
@@ -184,13 +184,13 @@ You should mostly submit a file-name, and either ")
                                (otherwise (error "The Version ~W is not supported"
                                                  openapi-version)))))
                           ((uiop:file-exists-p (get-data-file name :type "yaml"))
-                           (str:to-file (get-data-file name)
-                                        (convert-to-openapi-3 :pathname (get-data-file name :type "yaml")
-                                                              :content-type "yaml")))
+                           (to-file (get-data-file name)
+                                    (convert-to-openapi-3 :pathname (get-data-file name :type "yaml")
+                                                          :content-type "yaml")))
                           ((uiop:file-exists-p (get-data-file name :type "yml"))
-                           (str:to-file (get-data-file name)
-                                        (convert-to-openapi-3 :pathname (get-data-file name :type "yml")
-                                                              :content-type "yaml")))
+                           (to-file (get-data-file name)
+                                    (convert-to-openapi-3 :pathname (get-data-file name :type "yml")
+                                                          :content-type "yaml")))
                           (t
                            (error (concat "There is no " name " json/yaml in the openapi-generator/data folder
 Alternativeyl you can supply one of the keyword parameters (source-directory, apis-guru-id, file-content, url)"))))))))

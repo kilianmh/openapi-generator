@@ -19,8 +19,7 @@
                 #:param-case #:downcase #:upcase #:concat
                 #:emptyp #:containsp #:ends-with-p #:starts-with-p
                 #:split #:substring #:replace-first #:replace-using #:unwords
-                #:from-file #:to-file #:trim #:trim-left
-                #:string-case)
+                #:trim #:trim-left #:string-case)
   (:import-from #:com.inuoe.jzon
                 #:parse
                 #:stringify)
