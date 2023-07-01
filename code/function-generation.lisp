@@ -368,7 +368,7 @@ symbols will have numbers values are converted into strings at run time.")
   (:method ((json-type null))
     t))
 
-(defmethod json-content ((schema schema))
+(defmethod json-content ((schema schema) required)
   "Generate the code to validate request-body or generate it according to the spec."
   (let ((intern-content
           (intern "CONTENT"))
@@ -436,7 +436,11 @@ symbols will have numbers values are converted into strings at run time.")
                                             (get-output-stream-string s)))
                                       (declare (string output))
                                       (unless (string= "{}" output)
-                                        output))))))))))))
+                                        output)))))))
+                         (t
+                          ,(if required
+                               '(error "Request-body is required, but empty.")
+                               nil)))))))
 
 (defmethod get-response-type ((operation operation))
   "Get response type. Return value can be either :json or nil"
@@ -454,6 +458,12 @@ symbols will have numbers values are converted into strings at run time.")
                          hash-keys)))))
            (slot-value operation (quote responses))))
 
+(defgeneric request-body-required-p (request-body)
+  (:method ((request-body null))
+    nil)
+  (:method ((request-body request-body))
+    (eql (quote yason:true) (slot-value-safe request-body (quote required)))))
+
 (defgeneric generate-function (api path operation-type)
   (:documentation "Generate functions for all types of http request")
   (:method ((api openapi) (path string) (operation-type symbol))
@@ -462,6 +472,8 @@ symbols will have numbers values are converted into strings at run time.")
            (all-parameters   (collect-parameters path-object operation-type))
            (required-params  (get-required-parameter all-parameters))
            (optional-params  (get-optional-parameter all-parameters))
+           (request-body     (slot-value-safe operation-object (quote request-body)))
+           (body-required    (request-body-required-p request-body))
            (json-body        (json-body-schema operation-object))
            (json-body-schema (slot-value-safe json-body (quote schema)))
            (lambda-list      (get-lambda-list required-params optional-params operation-object
@@ -490,8 +502,10 @@ symbols will have numbers values are converted into strings at run time.")
                               :query ,uri-query))
 	           ,@(if (member intern-content lambda-list)
                          `(:content ,(if json-body
-                                         (json-content json-body-schema)
-                                         intern-content))
+                                         (json-content json-body-schema body-required)
+                                         (if body-required
+                                             `(serapeum:assure (not null) ,intern-content)
+                                             intern-content)))
                          (values))
 	           :method (quote ,(intern (symbol-name operation-type)))
 	           :headers ,(get-headers all-parameters operation-object))))
