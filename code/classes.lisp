@@ -451,10 +451,6 @@ Note that this restriction on additional properties is a difference between Refe
   (print-unreadable-object (object stream :type t :identity t)
     (cl:format stream "~A" (slot-value object (quote ref)))))
 
-(defmethod print-object ((object reference) stream)
-  (print-unreadable-object (object stream :type t :identity t)
-    (cl:format stream "~A" (ref object))))
-
 (json-class schema nil
             (("$schema" :any
                         :documentation "Specifying Schema Dialects
