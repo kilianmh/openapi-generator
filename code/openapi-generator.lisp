@@ -70,9 +70,9 @@
                           (when (member :operation-id alias)
                             (collect-alias-exports api "operation-id")))))))
 
-(defgeneric generate-function-code (api name)
+(defgeneric generate-function-code (api)
   (:documentation "Generate all function code as list")
-  (:method ((api openapi) name)
+  (:method ((api openapi))
     (flet ((path-function-code (api path)
              "Create functions for each path operator"
              (mapcar (function (lambda (operator)
@@ -168,7 +168,7 @@ Prefered alias source is operation-id. Last resort option is path.")
        (generate-parameters :headers headers :authorization authorization :cookie cookie
                             :parse parse :server server)
        (string #\Newline)(string #\Newline)
-       (cl:format nil "~{~W~% ~}" (generate-function-code api name))
+       (cl:format nil "~{~W~% ~}" (generate-function-code api))
        (when (member :operation-id alias-list)
          (let ((operation-id-alias
                  (generate-slot-alias api "operation-id")))
