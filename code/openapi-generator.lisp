@@ -251,4 +251,4 @@ as dynamic parameters.."
        system))
     (load-asd pathname-asd :name system-name)
     (when load-system
-      (load-system (intern system-name) :force t))))
+      (load-system (intern system-name)))))
