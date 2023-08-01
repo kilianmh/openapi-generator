@@ -209,7 +209,7 @@ Prefered alias source is operation-id. Last resort option is path.")
                               server parse headers authorization cookie
                               (alias (list :operation-id)) (system-directory :library) (load-system t)
                               openapi (api-name system-name) url source-directory collection-id content
-                              (dereference *dereference*))
+                              (dereference *dereference*) (verbose t))
   "Creates Openapi client by combining a project template with generated code.
 Source options are url, source-directory, collection-id, or openapi (openapi class instance).
 The options server, parse, headers, authorization, cookie, content are stored in the library code
@@ -232,6 +232,7 @@ as dynamic parameters.."
      project-pathname
      :name system-name
      :depends-on (quote (quri str com.inuoe.jzon dexador uiop openapi-generator))
+     :verbose nil
      :without-tests t)
     (with-open-file (system pathname-main
                             :direction :output :if-exists :supersede :if-does-not-exist :create)
@@ -249,6 +250,8 @@ as dynamic parameters.."
         :headers headers :authorization authorization :cookie cookie
         :parse parse :alias alias :server server)
        system))
+    (when verbose
+      (print (str:concat "The system " system-name " has been generated in the path: " (namestring project-pathname))))
     (load-asd pathname-asd :name system-name)
     (when load-system
       (load-system (intern system-name)))))
