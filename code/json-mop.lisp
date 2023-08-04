@@ -59,6 +59,17 @@ Includes checking of required slots."
             :class-name class))
     (values lisp-object key-count)))
 
+(defmethod json-to-clos ((input list) class &rest initargs)
+  (declare (ignore initargs))
+  (mapcar (lambda (element)
+            (json-to-clos element class))
+          input))
+
+(defmethod json-to-clos ((input vector) class &rest initargs)
+  (declare (ignore initargs))
+  (coerce (json-to-clos (coerce input 'list) class)
+          'vector))
+
 (defmethod to-lisp-value ((value hash-table) (json-type cons))
   (destructuring-bind (type value-type)
       json-type
