@@ -2,15 +2,19 @@
 
 (json-class openapi nil
             (("openapi" :string
+                        :reader openapi
                         :required t
                         :documentation "This string MUST be the version number of the OpenAPI Specification that the OpenAPI document uses. The openapi field SHOULD be used by tooling to interpret the OpenAPI document. This is not related to the API info.version string.")
              ("info" info
+                     :reader info
                      :required t
                      :documentation "Provides metadata about the API. The metadata MAY be used by tooling as required.")
              ("servers" :any
+                        :reader servers
                         :documentation "An array of Server Objects, which provide connectivity information to a target server. If the servers property is not provided, or is an empty array, the default value would be a Server Object with a url value of /.")
              ("security" :any :documentation "A declaration of which security mechanisms can be used across the API. The list of values includes alternative security requirement objects that can be used. Only one of the security requirement objects need to be satisfied to authorize a request. Individual operations can override this definition. To make security optional, an empty security requirement ({}) can be included in the array.")
              ("paths" (:hash-table path)
+                      :reader paths
                       :documentation "The available paths and operations for the API.
 Holds the relative paths to the individual endpoints and their operations. The path is appended to the URL from the Server Object in order to construct the full URL. The Paths MAY be empty, due to Access Control List (ACL) constraints.")
              ("tags" (:list tag)
@@ -38,6 +42,7 @@ Holds the relative paths to the individual endpoints and their operations. The p
 
 (json-class info nil
             (("title" :string
+                      :reader title
                       :documentation "The title of the API."
                       :required t)
              ("summary" :string
@@ -52,6 +57,7 @@ Holds the relative paths to the individual endpoints and their operations. The p
                         :documentation "The license information for the exposed API.")
              ("version" :string
                         :required t
+                        :reader version
                         :documentation "The version of the OpenAPI document (which is distinct from the OpenAPI Specification version or the API implementation version)."))
             (:documentation "The object provides metadata about the API. The metadata MAY be used by the clients if needed, and MAY be presented in editing or documentation generation tools for convenience."))
 
@@ -114,6 +120,7 @@ Holds the relative paths to the individual endpoints and their operations. The p
                      :documentation "An enumeration of string values to be used if the substitution options are from a limited set. The array MUST NOT be empty.")
              ("default" :string
                         :required t
+                        :reader default
                         :documentation "The default value to use for substitution, which SHALL be sent if an alternate value is not supplied. Note this behavior is different than the Schema Object’s treatment of default values, because in those cases parameter values are optional. If the enum is defined, the value MUST exist in the enum’s values.")
              ("description" :string
                             :documentation "An optional description for the server variable. CommonMark syntax MAY be used for rich text representation."))
@@ -189,16 +196,21 @@ Holds the relative paths to the individual endpoints and their operations. The p
             (("tags" (:list :string)
                      :documentation "A list of tags for API documentation control. Tags can be used for logical grouping of operations by resources or any other qualifier.")
              ("summary" :string
+                        :reader summary
                         :documentation "A short summary of what the operation does.")
              ("description" :string
+                            :reader description
                             :documentation "A verbose explanation of the operation behavior. CommonMark syntax MAY be used for rich text representation.")
              ("externalDocs" external-documentation
                              :documentation "Additional external documentation for this operation.")
-             ("operationId" :string
+             (operation-id "operationId" :string
+                            :reader operation-id
                             :documentation "Unique string used to identify the operation. The id MUST be unique among all operations described in the API. The operationId value is case-sensitive. Tools and libraries MAY use the operationId to uniquely identify an operation, therefore, it is RECOMMENDED to follow common programming naming conventions.")
              ("parameters"  (:list parameter)
                             :documentation "A list of parameters that are applicable for this operation. If a parameter is already defined at the Path Item, the new definition will override it but can never remove it. The list MUST NOT include duplicated parameters. A unique parameter is defined by a combination of a name and location. The list can use the Reference Object to link to parameters that are defined at the OpenAPI Object’s components/parameters.")
-             ("requestBody" request-body
+             (request-body "requestBody"
+                           request-body
+                            :reader request-body
                             :documentation "The request body applicable for this operation. The requestBody is fully supported in HTTP methods where the HTTP 1.1 specification [RFC7231] has explicitly defined semantics for request bodies. In other cases where the HTTP spec is vague (such as GET, HEAD and DELETE), requestBody is permitted but does not have well-defined semantics and SHOULD be avoided if possible.")
              ("responses" (:hash-table response)
                           :documentation "The list of possible responses as they are returned from executing this operation.
@@ -217,6 +229,7 @@ The Responses Object MUST contain at least one response code, and if only one re
              ("security" :any
                          :documentation "A declaration of which security mechanisms can be used for this operation. The list of values includes alternative security requirement objects that can be used. Only one of the security requirement objects need to be satisfied to authorize a request. To make security optional, an empty security requirement ({}) can be included in the array. This definition overrides any declared top-level security. To remove a top-level security declaration, an empty array can be used.")
              ("servers" (:list server)
+                        :reader servers
                         :documentation "An alternative server array to service this operation. If an alternative server object is specified at the Path Item Object or Root level, it will be overridden by this value."))
             (:documentation "Describes a single API operation on a path."))
 
@@ -243,6 +256,7 @@ The Responses Object MUST contain at least one response code, and if only one re
 (json-class parameter ()
             (("name" :string
                      :required t
+                     :reader name
                      :documentation "The name of the parameter. Parameter names are case sensitive.
 
     If in is \"path\", the name field MUST correspond to a template expression occurring within the path field in the Paths Object. See Path Templating for further information.
@@ -250,6 +264,7 @@ The Responses Object MUST contain at least one response code, and if only one re
     For all other cases, the name corresponds to the parameter name used by the in property.")
              ("in" :string
                    :required t
+                   :reader in
                    :documentation "The location of the parameter. Possible values are \"query\", \"header\", \"path\" or \"cookie\".")
              ("description" :string
                             :documentation "A brief description of the parameter. This could contain examples of use. CommonMark syntax MAY be used for rich text representation.")
@@ -304,6 +319,7 @@ For more complex scenarios, the content property can define the media type and s
              ("required" :any
                          :documentation "Determines if the request body is required in the request. Defaults to false.") ;; bool
              ("content"  (:hash-table media-type)
+                         :reader content
                          :required t
                          :documentation "The content of the request body. The key is a media type or media type range and the value describes it. For requests that match multiple keys, only the most specific key is applicable. e.g. text/plain overrides text/*"))
             (:documentation "Describes a single request body."))
@@ -589,6 +605,7 @@ Possible values indicating base 16, 32, and 64 encodings with several variations
 
              ;; Basic Meta-Data Annotations
              ("title" :string
+                      :reader title
                       :documentation "Can be used to decorate a user interface with information about the data produced by this user interface. A title will preferably be short.")
              ("description" :string
                             :documentation "Can be used to decorate a user interface with information about the data produced by this user interface. A description will provide explanation about the purpose of the instance described by this schema.
@@ -775,6 +792,7 @@ While composition offers model extensibility, it does not imply a hierarchy betw
 (json-class discriminator nil
             (("propertyName" :string
                              :required t
+                             :reader property-name
                              :documentation "The name of the property in the payload that will hold the discriminator value.")
              ("mapping" (:hash-table :string)
                         :documentation "An object to hold mappings between payload values and schema names or references."))
@@ -816,6 +834,7 @@ When using arrays, XML element names are not inferred (for singular/plural forms
              ("in" :string
                    :documentation "The location of the API key. Valid values are \"query\", \"header\" or \"cookie\".")
              ("scheme" :string
+                       :reader scheme
                        :documentation "The name of the HTTP Authorization scheme to be used in the Authorization header as defined in [RFC7235]. The values used SHOULD be registered in the IANA Authentication Scheme registry.")
              ("bearerFormat" :string
                              :documentation "A hint to the client to identify how the bearer token is formatted. Bearer tokens are usually generated by an authorization server, so this information is primarily for documentation purposes.")
@@ -847,9 +866,11 @@ Supported schemes are HTTP authentication, an API key (either as a header, a coo
 (json-class o-auth-flow nil
             (("authorizationUrl" :string
                                  :required t
+                                 :reader authorization-url
                                  :documentation "The authorization URL to be used for this flow. This MUST be in the form of a URL. The OAuth2 standard requires the use of TLS.")
              ("tokenUrl" :string
                          :required t
+                         :reader token-url
                          :documentation "The token URL to be used for this flow. This MUST be in the form of a URL. The OAuth2 standard requires the use of TLS.")
              ("refreshUrl" :string
                            :documentation "The URL to be used for obtaining refresh tokens. This MUST be in the form of a URL. The OAuth2 standard requires the use of TLS.")

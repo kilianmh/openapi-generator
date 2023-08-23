@@ -1,14 +1,16 @@
 (in-package #:openapi-generator)
 
 (json-class apis-guru-list nil
-            (("api-list" (:hash-table apis-guru-api))))
+            (("api-list" (:hash-table apis-guru-api) :reader api-list)))
 
 (json-class apis-guru-api nil
             (("added" :string
                       :documentation "Timestamp when the API was first added to the directory")
              ("preferred" :string
+                          :reader preferred
                           :documentation "Recommended version")
-             ("versions" (:hash-table apis-guru-api-version))))
+             ("versions" (:hash-table apis-guru-api-version)
+                         :reader versions)))
 
 (defmethod print-object ((object apis-guru-api) stream)
   (print-unreadable-object (object stream :type t)
@@ -22,12 +24,14 @@
              ("externalDocs" apis-guru-external-documentation
                              :documentation "Copy of `externalDocs` s…from OpenAPI definition")
              ("info" apis-guru-info
+                     :reader info
                      :documentation "Copy of `info` section from OpenAPI definition")
              ("swaggerURL" :string
                            :documentation "URL to OpenAPI definition in JSON format")
              ("swaggerYamlUrl" :string
                                :documentation "URL to OpenAPI definition in YAML format")
              ("updated" :any ; should be string or nil
+                        :reader updated
                         :documentation "Timestamp when the version was updated")
              ("openapiVer" :string)))
 
@@ -41,15 +45,15 @@
              ("version" :string)
              ("x-apisguru-categories" (:list :string))
              ("x-logo" apis-guru-url)
-             ("x-origin" (:list apis-guru-origin))
+             ("x-origin" (:list apis-guru-origin) :reader x-origin)
              ("x-providerName" :string)))
 
 (json-class apis-guru-url nil
-            (("url" :string)))
+            (("url" :string :reader url)))
 
 (json-class apis-guru-origin nil
             (("format" :string :reader apis-guru-origin-format)
-             ("url" :string)
+             ("url" :string :reader url)
              ("version" :string)))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)

@@ -16,34 +16,40 @@ It simply uses uiop:read-file-string. There is also uiop:read-file-lines."
   (funcall (function uiop:read-file-string) pathname :external-format :utf-8))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun expand-slot (json-key json-type rest)
-    (let ((slot-symbol
-            (intern (upcase (param-case json-key)))))
-      (if rest
-          (if (get-properties rest (list :accessor :reader :writer))
-              `(,slot-symbol
-                :json-type ,json-type
-                :json-key ,json-key
-                ,@rest)
-              `(,slot-symbol
-                :json-type ,json-type
-                :json-key ,json-key
-                :accessor ,slot-symbol
-                ,@rest))
-          `(,slot-symbol
-            :json-type ,json-type
-            :json-key ,json-key
-            :accessor ,slot-symbol)))))
+  (defun expand-slot (rest)
+    (flet ((slot-option-p (item)
+             (member item (list :reader :write :accessor :allocation
+                                :initarg :initform :type :documentation))))
+      (let ((first
+              (first rest))
+            (second
+              (second rest)))
+        (if (stringp first)
+            (if (or (null second) (slot-option-p second))
+                `(,(intern (string-upcase first))
+                  :json-key ,first
+                  ,@(cdr rest))
+                `(,(intern (string-upcase first))
+                  :json-key ,first
+                  :json-type ,second
+                  ,@(cddr rest)))
+            (if (stringp second)
+                (let ((third (third rest)))
+                  (if (or (null third) (slot-option-p third))
+                      `(,first
+                        :json-key ,second
+                        ,@(cddr rest))
+                      `(,first
+                        :json-key ,second
+                        :json-type ,third
+                        ,@(cdddr rest))))
+                `(first
+                  ,@rest)))))))
 
 (defmacro json-class (name direct-superclasses direct-slots &rest options)
   `(defclass ,name ,direct-superclasses
-     (,@(mapcar (function (lambda (slot)
-                  (expand-slot (first slot)
-                               (second slot)
-                               (cddr slot))))
-                direct-slots))
-     ,@(append (list (list :metaclass (quote json-mop:json-serializable-class)))
-        options)))
+     (,@(mapcar #'expand-slot direct-slots))
+     ,@(append options '((:metaclass json-mop:json-serializable-class)))))
 
 (defgeneric concat-strings (list)
   (:documentation "Concatenates strings together and breaks when other element comes")
