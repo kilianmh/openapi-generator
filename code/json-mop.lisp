@@ -8,6 +8,11 @@
   "When the JSON type is :ANY, Pass the hash-table VALUE unchanged"
   (funcall (function to-lisp-value) (coerce value 'vector) json-type))
 
+(defmethod to-lisp-value ((value null) (json-type (eql :bool)))
+  value)
+
+(defmethod to-lisp-value ((value (eql t)) (json-type (eql :bool)))
+  value)
 
 (defclass json-serializable-slot (closer-mop:standard-direct-slot-definition)
   ((json-key :initarg :json-key
