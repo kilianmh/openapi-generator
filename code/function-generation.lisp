@@ -70,7 +70,10 @@
   (let ((required-parameter
           nil))
     (mapc (function (lambda (parameter)
-            (when (eql (quote true) (slot-value-safe parameter (quote required)))
+            (when (let ((required
+                          (slot-value-safe parameter (quote required))))
+                    (or (eql (quote true) required)
+                        (eql (quote t) required)))
               (setf required-parameter (append required-parameter (list parameter))))))
           parameters)
     required-parameter))
@@ -80,7 +83,9 @@
   (let ((optional-parameter
           nil))
     (mapc (function (lambda (parameter)
-            (unless (eql (quote true) (slot-value-safe parameter (quote required)))
+            (unless (let ((required (slot-value-safe parameter (quote required))))
+                      (or (eql (quote true) required)
+                          (eql (quote t) required)))
               (setf optional-parameter (append optional-parameter (list parameter))))))
           parameters)
     optional-parameter))
