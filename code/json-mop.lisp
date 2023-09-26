@@ -27,27 +27,22 @@
 
 (defun initialize-slots-from-json (input lisp-object class-obj &optional (key-count 0))
   "Initializes all slots from LISP-OBJECT from INPUT.
-All slots, direct or inherited, that exist in class CLASS-OBJ are considered.
-Includes checking of required slots."
+All slots, direct or inherited, that exist in class CLASS-OBJ are considered."
   (loop for superclass in (closer-mop:class-direct-superclasses class-obj)
         unless (eql superclass (find-class (quote json-serializable)))
           do (setf (values lisp-object key-count)
                    (initialize-slots-from-json input lisp-object superclass key-count)))
+
   (loop for slot in (closer-mop:class-direct-slots class-obj)
-        do (let* ((json-key-name
-                   (json-key-name slot))
-                 (value
-                   (gethash json-key-name input :null)))
-             (when (and (eq value :null)
-                        (eq (required slot) t))
-               (warn (str:concat "The key \"" json-key-name "\" is not present in " (format nil "~A" input)
-                                   ", but required in "(format nil "~A" class-obj)".")))
+        do (let ((json-key-name
+                   (json-key-name slot)))
              (when json-key-name
                (handler-case
                    (progn
                      (setf (slot-value lisp-object
                                        (closer-mop:slot-definition-name slot))
-                           (to-lisp-value value (json-type slot)))
+                           (to-lisp-value (gethash json-key-name input :null)
+                                          (json-type slot)))
                      (incf key-count))
                  (null-value (condition)
                    (declare (ignore condition)) nil)))))
@@ -70,10 +65,20 @@ Includes checking of required slots."
             (json-to-clos element class))
           input))
 
-(defmethod json-to-clos ((input vector) class &rest initargs)
+(defmethod json-to-clos :after ((input hash-table) class &rest initargs)
+  "Check if all required slots are present in input."
   (declare (ignore initargs))
-  (coerce (json-to-clos (coerce input 'list) class)
-          'vector))
+  (let ((class-object
+          (find-class class)))
+    (declare (type json-serializable-class class-object))
+    (loop for slot in (closer-mop:class-direct-slots class-object)
+          do (when (required slot)
+               (let ((json-key-name
+                       (json-key-name slot)))
+                 (declare (type string json-key-name))
+                 (unless (gethash json-key-name input)
+                   (error (concatenate 'string "The key \"" json-key-name "\" is not present in " (format nil "~A" input)
+                                       ", but required in "(format nil "~A" class-object)"."))))))))
 
 (defmethod to-lisp-value ((value hash-table) (json-type cons))
   (destructuring-bind (type value-type)
