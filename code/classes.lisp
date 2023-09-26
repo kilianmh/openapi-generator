@@ -224,7 +224,7 @@ The default MAY be used as a default response object for all HTTP codes that are
 The Responses Object MUST contain at least one response code, and if only one response code is provided it SHOULD be the response for a successful operation call.")
              ("callbacks" (:hash-table :any)
                           :documentation "A map of possible out-of band callbacks related to the parent operation. The key is a unique identifier for the Callback Object. Each value in the map is a Callback Object that describes a request that may be initiated by the API provider and the expected responses.")
-             ("deprecated" :any ;; bool
+             ("deprecated" :bool
                            :documentation "Declares this operation to be deprecated. Consumers SHOULD refrain from usage of the declared operation. Default value is false.")
              ("security" :any
                          :documentation "A declaration of which security mechanisms can be used for this operation. The list of values includes alternative security requirement objects that can be used. Only one of the security requirement objects need to be satisfied to authorize a request. To make security optional, an empty security requirement ({}) can be included in the array. This definition overrides any declared top-level security. To remove a top-level security declaration, an empty array can be used.")
@@ -268,18 +268,18 @@ The Responses Object MUST contain at least one response code, and if only one re
                    :documentation "The location of the parameter. Possible values are \"query\", \"header\", \"path\" or \"cookie\".")
              ("description" :string
                             :documentation "A brief description of the parameter. This could contain examples of use. CommonMark syntax MAY be used for rich text representation.")
-             ("required" :any ;; :bool
+             ("required" :bool
                          :documentation "Determines whether this parameter is mandatory. If the parameter location is \"path\", this property is REQUIRED and its value MUST be true. Otherwise, the property MAY be included and its default value is false.")
-             ("deprecated" :any ;; :bool
+             ("deprecated" :bool
                            :documentation "Specifies that a parameter is deprecated and SHOULD be transitioned out of usage. Default value is false.")
-             ("allowEmptyValue" :any ;; :bool
+             ("allowEmptyValue" :bool
                                 :documentation "Sets the ability to pass empty-valued parameters. This is valid only for query parameters and allows sending a parameter with an empty value. Default value is false. If style is used, and if behavior is n/a (cannot be serialized), the value of allowEmptyValue SHALL be ignored. Use of this property is NOT RECOMMENDED, as it is likely to be removed in a later revision.")
              ("style" :string
                       :documentation "Describes how the parameter value will be serialized depending on the type of the parameter value. Default values (based on value of in): for query - form; for path - simple; for header - simple; for cookie - form.")
-             ("explode" :any
-                        :documentation "When this is true, parameter values of type array or object generate separate parameters for each value of the array or key-value pair of the map. For other types of parameters this property has no effect. When style is form, the default value is true. For all other styles, the default value is false.") ;; bool
-             ("allowReserved" :any
-                              :documentation "Determines whether the parameter value SHOULD allow reserved characters, as defined by [RFC3986] :/?#[]@!$&'()*+,;= to be included without percent-encoding. This property only applies to parameters with an in value of query. The default value is false.") ;; bool, only if in-query
+             ("explode" :bool
+                        :documentation "When this is true, parameter values of type array or object generate separate parameters for each value of the array or key-value pair of the map. For other types of parameters this property has no effect. When style is form, the default value is true. For all other styles, the default value is false.")
+             ("allowReserved" :bool
+                              :documentation "Determines whether the parameter value SHOULD allow reserved characters, as defined by [RFC3986] :/?#[]@!$&'()*+,;= to be included without percent-encoding. This property only applies to parameters with an in value of query. The default value is false.")
              ("schema" schema
                        :documentation "The schema defining the type used for the parameter.") ;; only if in is body
              ("example" :any
@@ -316,8 +316,8 @@ For more complex scenarios, the content property can define the media type and s
             (("$ref"     :string)
              ("description" :string
                             :documentation "A brief description of the request body. This could contain examples of use. CommonMark syntax MAY be used for rich text representation.")
-             ("required" :any
-                         :documentation "Determines if the request body is required in the request. Defaults to false.") ;; bool
+             ("required" :bool
+                         :documentation "Determines if the request body is required in the request. Defaults to false.")
              ("content"  (:hash-table media-type)
                          :reader content
                          :required t
@@ -350,11 +350,11 @@ For more complex scenarios, the content property can define the media type and s
                         :documentation "A map allowing additional information to be provided as headers, for example Content-Disposition. Content-Type is described separately and SHALL be ignored in this section. This property SHALL be ignored if the request body media type is not a multipart.")
              ("style" :string
                       :documentation "Describes how a specific property value will be serialized depending on its type. See Parameter Object for details on the style property. The behavior follows the same values as query parameters, including default values. This property SHALL be ignored if the request body media type is not application/x-www-form-urlencoded or multipart/form-data. If a value is explicitly defined, then the value of contentType (implicit or explicit) SHALL be ignored.")
-             ("explode" :any
-                        :documentation "When this is true, property values of type array or object generate separate parameters for each value of the array, or key-value-pair of the map. For other types of properties this property has no effect. When style is form, the default value is true. For all other styles, the default value is false. This property SHALL be ignored if the request body media type is not application/x-www-form-urlencoded or multipart/form-data. If a value is explicitly defined, then the value of contentType (implicit or explicit) SHALL be ignored.") ;; bool
-             ("allowReserved" :any
+             ("explode" :bool
+                        :documentation "When this is true, property values of type array or object generate separate parameters for each value of the array, or key-value-pair of the map. For other types of properties this property has no effect. When style is form, the default value is true. For all other styles, the default value is false. This property SHALL be ignored if the request body media type is not application/x-www-form-urlencoded or multipart/form-data. If a value is explicitly defined, then the value of contentType (implicit or explicit) SHALL be ignored.")
+             ("allowReserved" :bool
                               :documentation "Determines whether the parameter value SHOULD allow reserved characters, as defined by [RFC3986] :/?#[]@!$&'()*+,;= to be included without percent-encoding. The default value is false. This property SHALL be ignored if the request body media type is not application/x-www-form-urlencoded or multipart/form-data. If a value is explicitly defined, then the value of contentType (implicit or explicit) SHALL be ignored."))
-            (:documentation "A single encoding definition applied to a single schema property.")) ;; bool
+            (:documentation "A single encoding definition applied to a single schema property."))
 
 (json-class response nil
             (("description" :string
@@ -386,7 +386,7 @@ For more complex scenarios, the content property can define the media type and s
              ("operationId" :string
                             :documentation "The name of an existing, resolvable OAS operation, as defined with a unique operationId. This field is mutually exclusive of the operationRef field.")
              ("parameters" (:hash-table :any)
-                           :documentation "A map representing parameters to pass to an operation as specified with operationId or identified via operationRef. The key is the parameter name to be used, whereas the value can be a constant or an expression to be evaluated and passed to the linked operation. The parameter name can be qualified using the parameter location [{in}.]{name} for operations that use the same parameter name in different locations (e.g. path.id).") ;; was list
+                           :documentation "A map representing parameters to pass to an operation as specified with operationId or identified via operationRef. The key is the parameter name to be used, whereas the value can be a constant or an expression to be evaluated and passed to the linked operation. The parameter name can be qualified using the parameter location [{in}.]{name} for operations that use the same parameter name in different locations (e.g. path.id).")
              ("requestBody" :any
                             :documentation "A literal value or {expression} to use as a request body when calling the target operation.")
              ("description" :string
@@ -405,11 +405,11 @@ A linked operation MUST be identified using either an operationRef or operationI
 (json-class header nil
             (("description" :string
                             :documentation "A brief description of the header. This could contain examples of use. CommonMark syntax MAY be used for rich text representation.")
-             ("required" :any ;; boolean
+             ("required" :bool
                          :documentation "Determines whether this header is mandatory.")
-             ("deprecated" :any ;; boolean
+             ("deprecated" :bool
                            :documentation "Specifies that a parameter is deprecated and SHOULD be transitioned out of usage. Default value is false.")
-             ("allowEmptyValue" :any ;; boolean
+             ("allowEmptyValue" :bool
                                 :documentation "Sets the ability to pass empty-valued parameters. Default value is false. If style is used, and if behavior is n/a (cannot be serialized), the value of allowEmptyValue SHALL be ignored. Use of this property is NOT RECOMMENDED, as it is likely to be removed in a later revision.")
              ("schema" schema
                        :documentation "The schema defining the type used for the parameter.")
@@ -417,9 +417,9 @@ A linked operation MUST be identified using either an operationRef or operationI
                         :documentation "A map containing the representations for the parameter. The key is the media type and the value describes it. The map MUST only contain one entry.")
              ("style" :string
                       :documentation "Describes how the parameter value will be serialized depending on the type of the parameter value. Default value: simple.")
-             ("explode" :any
-                        :documentation "When this is true, parameter values of type array or object generate separate parameters for each value of the array or key-value pair of the map. For other types of parameters this property has no effect. When style is form, the default value is true. For all other styles, the default value is false.")  ;; bool
-             ("allowReserved" :any ;; boolean
+             ("explode" :bool
+                        :documentation "When this is true, parameter values of type array or object generate separate parameters for each value of the array or key-value pair of the map. For other types of parameters this property has no effect. When style is form, the default value is true. For all other styles, the default value is false.")
+             ("allowReserved" :bool
                               :documentation "Determines whether the parameter value SHOULD allow reserved characters, as defined by [RFC3986] :/?#[]@!$&'()*+,;= to be included without percent-encoding. This property only applies to parameters with an in value of query. The default value is false.")
              ("example" :any
                         :documentation "Example of the parameter’s potential value. The example SHOULD match the specified schema and encoding properties if present. The example field is mutually exclusive of the examples field. Furthermore, if referencing a schema that contains an example, the example value SHALL override the example provided by the schema. To represent examples of media types that cannot naturally be represented in JSON or YAML, a string value can contain the example with escaping where necessary.")
@@ -478,7 +478,7 @@ The $schema keyword MAY be present in any root Schema Object, and if present MUS
 To allow use of a different default $schema value for all Schema Objects contained within an OAS document, a jsonSchemaDialect value may be set within the OpenAPI Object. If this default is not set, then the OAS dialect schema id MUST be used for these Schema Objects. The value of $schema within a Schema Object always overrides any default.
 
 When a Schema Object is referenced from an external resource which is not an OAS document (e.g. a bare JSON Schema resource), then the value of the $schema keyword for schemas within that resource MUST follow JSON Schema rules")
-             ("$vocabulary" (:hash-table :any) ;; bool value
+             ("$vocabulary" (:hash-table :any)
                             :documentation "The \"$vocabulary\" keyword is used in meta-schemas to identify the vocabularies available for use in schemas described by that meta-schema. It is also used to indicate whether each vocabulary is required or optional, in the sense that an implementation MUST understand the required vocabularies in order to successfully process the schema. Together, this information forms a dialect. Any vocabulary that is understood by the implementation MUST be processed in a manner consistent with the semantic definitions contained within the vocabulary. The value of this keyword MUST be an object. The property names in the object MUST be URIs (containing a scheme) and this URI MUST be normalized. Each URI that appears as a property name identifies a specific set of keywords and their semantics. The URI MAY be a URL, but the nature of the retrievable resource is currently undefined, and reserved for future use. Vocabulary authors MAY use the URL of the vocabulary specification, in a human-readable media type such as text/html or text/plain, as the vocabulary URI. Vocabulary documents may be added in forthcoming drafts. For now, identifying the keyword set is deemed sufficient as that, along with meta-schema validation, is how the current \"vocabularies\" work today. Any future vocabulary document format will be specified as a JSON document, so using text/html or other non-JSON formats in the meantime will not produce any future ambiguity. The values of the object properties MUST be booleans. If the value is true, then implementations that do not recognize the vocabulary MUST refuse to process any schemas that declare this meta-schema with \"$schema\". If the value is false, implementations that do not recognize the vocabulary SHOULD proceed with processing such schemas. The value has no impact if the implementation understands the vocabulary. Per 6.5, unrecognized keywords SHOULD be treated as annotations. This remains the case for keywords defined by unrecognized vocabularies. It is not currently possible to distinguish between unrecognized keywords that are defined in vocabularies from those that are not part of any vocabulary. The \"$vocabulary\" keyword SHOULD be used in the root schema of any schema document intended for use as a meta-schema. It MUST NOT appear in subschemas. The \"$vocabulary\" keyword MUST be ignored in schema documents that are not being processed as a meta-schema. This allows validating a meta-schema M against its own meta-schema M' without requiring the validator to understand the vocabularies declared by M.")
 
              ;; Base URI
@@ -572,7 +572,7 @@ This string SHOULD be a valid regular expression, according to the ECMA-262 regu
                          :documentation "The value of this keyword MUST be a non-negative integer. An array instance is valid against \"maxItems\" if its size is less than, or equal to, the value of this keyword.")
              ("minItems" :number
                          :documentation "The value of this keyword MUST be a non-negative integer. An array instance is valid against \"minItems\" if its size is greater than, or equal to, the value of this keyword. Omitting this keyword has the same behavior as a value of 0.")
-             ("uniqueItems" :any ;; boolean
+             ("uniqueItems" :bool
                             :documentation "The value of this keyword MUST be a boolean. If this keyword has boolean value false, the instance validates successfully. If it has boolean value true, the instance validates successfully if all of its elements are unique. Omitting this keyword has the same behavior as a value of false.
 ")
              ("maxContains" :number
@@ -613,17 +613,17 @@ Possible values indicating base 16, 32, and 64 encodings with several variations
              ("default" :any
                         :documentation "There are no restrictions placed on the value of this keyword. When multiple occurrences of this keyword are applicable to a single sub-instance, implementations SHOULD remove duplicates.
 This keyword can be used to supply a default JSON value associated with a particular schema. It is RECOMMENDED that a default value be valid against the associated schema.")
-             ("deprecated" :any ;; boolean
+             ("deprecated" :bool
                            :documentation "The value of this keyword MUST be a boolean.
 When multiple occurrences of this keyword are applicable to a single sub-instance, applications SHOULD consider the instance location to be deprecated if any occurrence specifies a true value. If \"deprecated\" has a value of boolean true, it indicates that applications SHOULD refrain from usage of the declared property. It MAY mean the property is going to be removed in the future. A root schema containing \"deprecated\" with a value of true indicates that the entire resource being described MAY be removed in the future. The \"deprecated\" keyword applies to each instance location to which the schema object containing the keyword successfully applies. This can result in scenarios where every array item or object property is deprecated even though the containing array or object is not. Omitting this keyword has the same behavior as a value of false.")
              ;; "readOnly" and "writeOnly"
-             ("readOnly" :any ;; boolean
+             ("readOnly" :bool
                          :documentation "The value of these keywords MUST be a boolean. When multiple occurrences of these keywords are applicable to a single sub-instance, the resulting behavior SHOULD be as for a true value if any occurrence specifies a true value, and SHOULD be as for a false value otherwise.
 If \"readOnly\" has a value of boolean true, it indicates that the value of the instance is managed exclusively by the owning authority, and attempts by an application to modify the value of this property are expected to be ignored or rejected by that owning authority.
 An instance document that is marked as \"readOnly\" for the entire document MAY be ignored if sent to the owning authority, or MAY result in an error, at the authority's discretion.
 For example, \"readOnly\" would be used to mark a database-generated serial number as read-only, while \"writeOnly\" would be used to mark a password input field. These keywords can be used to assist in user interface instance generation. In particular, an application MAY choose to use a widget that hides input values as they are typed for write-only fields.
 Omitting these keywords has the same behavior as values of false")
-             ("writeOnly" :any ;; boolean
+             ("writeOnly" :bool
                           :documentation "The value of these keywords MUST be a boolean.
 When multiple occurrences of these keywords are applicable to a single sub-instance, the resulting behavior SHOULD be as for a true value if any occurrence specifies a true value, and SHOULD be as for a false value otherwise.
 If \"writeOnly\" has a value of boolean true, it indicates that the value is never present when the instance is retrieved from the owning authority. It can be present when sent to the owning authority to update or create the document (or the resource it represents), but it will not be included in any updated or newly created version of the instance. An instance document that is marked as \"writeOnly\" for the entire document MAY be returned as a blank document of some sort, or MAY produce an error upon retrieval, or have the retrieval request ignored, at the authority's discretion. For example, \"readOnly\" would be used to mark a database-generated serial number as read-only, while \"writeOnly\" would be used to mark a password input field. These keywords can be used to assist in user interface instance generation. In particular, an application MAY choose to use a widget that hides input values as they are typed for write-only fields.
@@ -752,13 +752,13 @@ https://example.com/schemas/common#/$defs/count/minimum
 This information MAY be omitted only if either the dynamic scope did not pass over a reference or if the schema does not declare an absolute URI as its \"$id\".")
              ("instanceLocation" :string
                                  :documentation "The location of the JSON value within the instance being validated. The value MUST be expressed as a JSON Pointer.")
-             ("valid" :any ;; boolean
+             ("valid" :bool
                       :documentation "A boolean value indicating the overall validation success or failure")
              ("errors" :any
                        :documentation "The collection of errors or annotations produced by a failed validation")
              ("annotations" :any
                             :documentation "The collection of errors or annotations produced by a successful validation")
-             ("nullable" :any ;; boolean
+             ("nullable" :bool
               :documentation "Marks a slot that can be null."))
             (:documentation "The Schema Object allows the definition of input and output data types. These types can be objects, but also primitives and arrays. This object is a superset of the JSON Schema Specification Draft 2020-12.
 
@@ -817,7 +817,7 @@ The discriminator object is legal only when using one of the composite keywords 
                        :documentation "The prefix to be used for the name.")
              ("attribute" :any
                           :documentation "Declares whether the property definition translates to an attribute instead of an element. Default value is false.")
-             ("wrapped" :any ;; bool
+             ("wrapped" :bool
                         :documentation "MAY be used only for an array definition. Signifies whether the array is wrapped (for example, <books><book/><book/></books>) or unwrapped (<book/><book/>). Default value is false. The definition takes effect only when defined alongside type being array (outside the items)."))
             (:documentation "A metadata object that allows for more fine-tuned XML model definitions.
 
