@@ -113,13 +113,14 @@
 (defgeneric generate-parameters (&key query headers authorization cookie parse server)
   (:documentation "Creates code to be included in main.lisp for parameters")
   (:method (&key query headers authorization cookie parse server)
-    (cl:format nil "~{~S~%~}"
-               (list `(defparameter ,(intern "*PARSE*") ,(when parse parse))
-                     `(defparameter ,(intern "*AUTHORIZATION*") ,authorization)
-                     `(defparameter ,(intern "*SERVER*") ,server)
-                     `(defparameter ,(intern "*COOKIE*") ,cookie)
-                     `(defparameter ,(intern "*HEADERS*") ',headers)
-                     `(defparameter ,(intern "*QUERY*") ',query)))))
+    (let ((*print-case* :downcase))
+      (cl:format nil "~{~S~%~}"
+                 (list `(defparameter ,(intern "*PARSE*") ,(when parse parse))
+                       `(defparameter ,(intern "*AUTHORIZATION*") ,authorization)
+                       `(defparameter ,(intern "*SERVER*") ,server)
+                       `(defparameter ,(intern "*COOKIE*") ,cookie)
+                       `(defparameter ,(intern "*HEADERS*") ',headers)
+                       `(defparameter ,(intern "*QUERY*") ',query))))))
 
 (defgeneric check-api-slots (api list)
   (:documentation "Make sure that the function (alias) can be generated.
@@ -159,31 +160,32 @@ Prefered alias source is operation-id. Last resort option is path.")
   (:method (api name &key parse headers authorization server cookie alias)
     (let ((alias-list
             (check-api-slots api alias)))
-      (concat
-       (cl:format nil "~S" (generate-defpackage name api :alias alias-list))
-       (string #\Newline)(string #\Newline)
-       (cl:format nil "(in-package :~A)" (downcase (symbol-name name)))
-       (string #\Newline)(string #\Newline)
-       (string #\Newline)(string #\Newline)
-       (generate-parameters :headers headers :authorization authorization :cookie cookie
-                            :parse parse :server server)
-       (string #\Newline)(string #\Newline)
-       (cl:format nil "~{~W~% ~}" (generate-function-code api))
-       (when (member :operation-id alias-list)
-         (let ((operation-id-alias
-                 (generate-slot-alias api "operation-id")))
-           (when operation-id-alias
-             (cl:format nil "~S" `(setf ,@operation-id-alias)))))
-       (when (member :summary alias-list)
-         (let ((summary-alias
-                 (generate-slot-alias api "summary")))
-           (when summary-alias
-             (cl:format nil "~S" `(setf ,@summary-alias)))))
-       (when (member :description alias-list)
-         (let ((description-alias
-                 (generate-slot-alias api "description")))
-           (when description-alias
-             (cl:format nil "~S" `(setf ,@description-alias)))))))))
+      (let ((*print-case* :downcase))
+        (concat
+         (cl:format nil "~S" (generate-defpackage name api :alias alias-list))
+         (string #\Newline)(string #\Newline)
+         (cl:format nil "(in-package :~A)" (downcase (symbol-name name)))
+         (string #\Newline)(string #\Newline)
+         (string #\Newline)(string #\Newline)
+         (generate-parameters :headers headers :authorization authorization :cookie cookie
+                              :parse parse :server server)
+         (string #\Newline)(string #\Newline)
+         (cl:format nil "~{~W~% ~}" (generate-function-code api))
+         (when (member :operation-id alias-list)
+           (let ((operation-id-alias
+                   (generate-slot-alias api "operation-id")))
+             (when operation-id-alias
+               (cl:format nil "~S" `(setf ,@operation-id-alias)))))
+         (when (member :summary alias-list)
+           (let ((summary-alias
+                   (generate-slot-alias api "summary")))
+             (when summary-alias
+               (cl:format nil "~S" `(setf ,@summary-alias)))))
+         (when (member :description alias-list)
+           (let ((description-alias
+                   (generate-slot-alias api "description")))
+             (when description-alias
+               (cl:format nil "~S" `(setf ,@description-alias))))))))))
 
 (defgeneric ensure-project-directory (directory)
   (:documentation "Makes sure that the directory is existing before the template is generated.")
