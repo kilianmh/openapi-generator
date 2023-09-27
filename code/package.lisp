@@ -49,4 +49,5 @@
            #:make-openapi-client
            #:*dereference*
            #:dereference
+           #:*converter-url*
            #:convert-to-openapi-3))

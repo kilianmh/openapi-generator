@@ -11,3 +11,6 @@
 
 (defvar *dereference* t
   "This variable influences whether the openapi document will be derefenced or not.")
+
+(defparameter *converter-url* "https://converter.swagger.io"
+  "Default swagger converter url.")
