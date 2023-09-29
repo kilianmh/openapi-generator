@@ -3,32 +3,38 @@
 (defgeneric get-primary-uri (api)
   (:documentation "Return first server uri")
   (:method ((api openapi))
-    (let ((servers (servers api)))
-      (typecase servers
+    (let ((servers (slot-value-safe api 'servers)))
+      (etypecase servers
+        (null
+         "")
         (string
          servers)
         (vector
-         (let ((first-server-object
-                 (car (coerce servers (quote list)))))
-           (typecase first-server-object
-             (string first-server-object)
-             (hash-table
-              (let* ((first-url
-                       (gethash "url" first-server-object))
-                     (curly-brace-location
-                       (cl:search "{" first-url)))
-                (if curly-brace-location
-                    (let* ((end
-                             (cl:search "}" first-url))
-                           (variable-name
-                             (substring (1+ curly-brace-location)
-                                        end first-url)))
-                      (replace-first (concat "{" variable-name "}")
-                                     (gethash "default"
-                                              (gethash variable-name
-                                                       (gethash "variables" first-server-object)))
-                                     first-url))
-                    first-url))))))))))
+         (if (= 0 (length servers))
+             ""
+             (let ((first-server-object
+                     (car (coerce servers (quote list)))))
+               (str:trim-right
+                (typecase first-server-object
+                  (string first-server-object)
+                  (hash-table
+                   (let* ((first-url
+                            (gethash "url" first-server-object))
+                          (curly-brace-location
+                            (cl:search "{" first-url)))
+                     (if curly-brace-location
+                         (let* ((end
+                                  (cl:search "}" first-url))
+                                (variable-name
+                                  (substring (1+ curly-brace-location)
+                                             end first-url)))
+                           (replace-first (concat "{" variable-name "}")
+                                          (gethash "default"
+                                                   (gethash variable-name
+                                                            (gethash "variables" first-server-object)))
+                                          first-url))
+                         first-url))))
+                :char-bag "/"))))))))
 
 (defgeneric collect-parameters (path operation)
   (:documentation "Collect all parameters belong to an api a path and operation.")
@@ -236,12 +242,11 @@ This only happens, if arguments supplied.")
               (funcall (function assure-optional) parameter)))
             optional-parameter)))
 
-(defgeneric path-list (uri-path path)
+(defgeneric path-list (path)
   (:documentation "Convert path string into a list of strings and symbols")
-  (:method ((uri-path string) (path string))
+  (:method ((path string))
     (remove-if (function emptyp)
-               (cons (string-right-trim "/" uri-path)
-                     (mapcar
+               (mapcar
                       (function (lambda (sequence)
                         (if (starts-with-p "{" sequence)
                             (intern (upcase
@@ -254,8 +259,6 @@ This only happens, if arguments supplied.")
                              (replace-using (list "/" " / "
                                                   "." " . ")
                                             path))))))
-  (:method ((uri-path null) (path string))
-    (path-list "" path)))
 
 (defgeneric path-list-stringified (path-list parameter-list)
   (:documentation "Get a list where symbols that will have a value of type strings are untouched, while
@@ -283,13 +286,12 @@ symbols will have numbers values are converted into strings at run time.")
                              (string item))))
                          path-list)))))
 
-(defgeneric get-path (path parameters primary-uri)
+(defgeneric get-path (path parameters)
   (:documentation "generate path list")
-  (:method ((path string) (parameters list) (primary-uri string))
+  (:method ((path string) (parameters list))
     (let ((path-list
             (concat-strings
-             (path-list-stringified (path-list (uri-path (uri primary-uri))
-                                               path)
+             (path-list-stringified (path-list path)
                                     parameters))))
       (case (length path-list)
         (1 (car path-list))
@@ -474,7 +476,7 @@ symbols will have numbers values are converted into strings at run time.")
            (response-type    (get-response-type operation-object))
 	   (description      (get-description operation-object))
            (primary-uri      (get-primary-uri api))
-           (uri-path         (get-path path all-parameters primary-uri))
+           (uri-path         (get-path path all-parameters))
            (uri-query        (get-query all-parameters))
            (intern-response  (intern "RESPONSE"))
            (intern-content   (intern "CONTENT"))
@@ -491,7 +493,7 @@ symbols will have numbers values are converted into strings at run time.")
                    (render-uri
 	            (make-uri :scheme (uri-scheme ,intern-server-uri)
                               :host (uri-host ,intern-server-uri)
-                              :path ,uri-path
+                              :path (concat (uri-path ,intern-server-uri) ,uri-path)
                               :query ,uri-query))
 	           ,@(if (member intern-content lambda-list)
                          `(:content ,(if json-body
