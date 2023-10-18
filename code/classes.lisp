@@ -182,14 +182,14 @@ Holds the relative paths to the individual endpoints and their operations. The p
              (path-items "pathItems" (:hash-table :any)
 			 :reader path-items
                           :documentation "An object to hold reusable Path Item Object.")
-             (ref "$ref" :string
-		  :reader ref))
+             (reference "$ref" :string
+			:reader reference))
             (:documentation "Holds a set of reusable objects for different aspects of the OAS. All objects defined within the components object will have no effect on the API unless they are explicitly referenced from properties outside the components object."))
 
 (json-class path nil
-            (("$ref" :string
-		     :reader ref
-                     :documentation "Allows for a referenced definition of this path item. The referenced structure MUST be in the form of a Path Item Object. In case a Path Item Object field appears both in the defined object and the referenced object, the behavior is undefined. See the rules for resolving Relative References.")
+            ((reference "$ref" :string
+			:reader reference
+			:documentation "Allows for a referenced definition of this path item. The referenced structure MUST be in the form of a Path Item Object. In case a Path Item Object field appears both in the defined object and the referenced object, the behavior is undefined. See the rules for resolving Relative References.")
              ("summary" :string
 			:reader summary
                         :documentation "An optional, string summary, intended to apply to all operations in this path.")
@@ -350,8 +350,8 @@ The Responses Object MUST contain at least one response code, and if only one re
              ("content" (:hash-table media-type)
 			:reader content
                         :documentation "A map containing the representations for the parameter. The key is the media type and the value describes it. The map MUST only contain one entry.")
-             ("$ref" :string
-		     :reader ref))
+             (reference "$ref" :string
+			:reader reference))
             (:documentation "Describes a single operation parameter.
 A unique parameter is defined by a combination of a name and location.
 
@@ -376,8 +376,8 @@ For more complex scenarios, the content property can define the media type and s
           (cl:format stream "name: ~A, in ~A" (name object) (in object))))))
 
 (json-class request-body nil
-            ((ref "$ref" :string
-		  :reader ref)
+            ((reference "$ref" :string
+			:reader reference)
              ("description" :string
                             :documentation "A brief description of the request body. This could contain examples of use. CommonMark syntax MAY be used for rich text representation.")
              ("required" :bool
@@ -443,8 +443,8 @@ For more complex scenarios, the content property can define the media type and s
              ("links" (:hash-table link)
 		      :reader links
                       :documentation "A map of operations links that can be followed from the response. The key of the map is a short name for the link, following the naming constraints of the names for Component Objects.")
-             ("$ref" :string
-		     :reader ref))
+             (reference "$ref" :string
+			:reader reference))
             (:documentation "Describes a single response from an API Operation, including design-time, static links to operations based on the response."))
 
 (json-class example nil
@@ -460,8 +460,8 @@ For more complex scenarios, the content property can define the media type and s
              (external-value "externalValue" :string
 			     :reader external-value
                               :documentation "A URI that points to the literal example. This provides the capability to reference examples that cannot easily be included in JSON or YAML documents. The value field and externalValue field are mutually exclusive. See the rules for resolving Relative References.")
-             ("$ref" :string
-		     :reader ref)))
+             (reference "$ref" :string
+			:reader reference)))
 
 (json-class link nil
             ((operation-ref "operationRef" :string
@@ -482,8 +482,8 @@ For more complex scenarios, the content property can define the media type and s
              ("server" server
 		       :reader server
                        :documentation "	 server object to be used by the target operation.")
-             ("$ref" :string
-		     :reader ref))
+             (reference "$ref" :string
+			:reader reference))
             (:documentation "The Link object represents a possible design-time link for a response. The presence of a link does not guarantee the caller’s ability to successfully invoke it, rather it provides a known relationship and traversal mechanism between responses and other operations.
 
 Unlike dynamic links (i.e. links provided in the response payload), the OAS linking mechanism does not require link information in the runtime response.
@@ -526,8 +526,8 @@ A linked operation MUST be identified using either an operationRef or operationI
              ("examples" (:hash-table example)
 			 :reader examples
                          :documentation "Examples of the parameter’s potential value. Each example SHOULD contain a value in the correct format as specified in the parameter encoding. The examples field is mutually exclusive of the example field. Furthermore, if referencing a schema that contains an example, the examples value SHALL override the example provided by the schema.")
-             (ref "$ref" :string
-		  :reader ref))
+             (reference "$ref" :string
+			:reader reference))
             (:documentation "The Header Object follows the structure of the Parameter Object with the following changes:
   1. name MUST NOT be specified, it is given in the corresponding headers map.
   2. in MUST NOT be specified, it is implicitly in header.
@@ -551,10 +551,10 @@ A linked operation MUST be identified using either an operationRef or operationI
     (cl:format stream "~A" (name object))))
 
 (json-class reference nil
-            ((ref "$ref" :string
-		  :reader ref
-		  :required t
-		  :documentation "The reference identifier. This MUST be in the form of a URI.")
+            ((reference "$ref" :string
+			:reader reference
+			:required t
+			:documentation "The reference identifier. This MUST be in the form of a URI.")
              ("summary" :string
 			:reader summary
                         :documentation "A short summary which by default SHOULD override that of the referenced component. If the referenced object-type does not allow a summary field, then this field has no effect.")
@@ -605,9 +605,9 @@ If present, the value of this keyword MUST be a string and MUST start with a let
                                :documentation "Separately from the usual usage of URIs, \"$dynamicAnchor\" indicates that the fragment is an extension point when used with the \"$dynamicRef\" keyword. This low-level, advanced feature makes it easier to extend recursive schemas such as the meta-schemas, without imposing any particular semantics on that extension. See the section on \"$dynamicRef\" (Section 8.2.3.2) for details.
 In most cases, the normal fragment behavior both suffices and is more intuitive. Therefore it is RECOMMENDED that \"$anchor\" be used to create plain name fragments unless there is a clear need for \"$dynamicAnchor\".")
              ;; Schema References
-             (ref "$ref" :string
-		  :reader ref
-		  :documentation "Direct References with \"$ref\"
+             (reference "$ref" :string
+			:reader referenece
+			:documentation "Direct References with \"$ref\"
 
 The \"$ref\" keyword is an applicator that is used to reference a statically identified schema. Its results are the results of the referenced schema. Note that this definition of how the results are determined means that other keywords can appear alongside of \"$ref\" in the same schema object.
 The value of the \"$ref\" keyword MUST be a string which is a URI-Reference. Resolved against the current URI base, it produces the URI of the schema to apply. This resolution is safe to perform on schema load, as the process of evaluating an instance cannot change how the reference resolves.")
@@ -1024,8 +1024,8 @@ When using arrays, XML element names are not inferred (for singular/plural forms
              (open-id-connect-url "openIdConnectUrl" :string
 				  :reader open-id-connect-url
 				  :documentation "OpenId Connect URL to discover OAuth2 configuration values. This MUST be in the form of a URL. The OpenID Connect standard requires the use of TLS.")
-             (ref "$ref" :string
-		  :reader ref))
+             (reference "$ref" :string
+			:reader reference))
             (:documentation "Defines a security scheme that can be used by the operations.
 
 Supported schemes are HTTP authentication, an API key (either as a header, a cookie parameter or as a query parameter), mutual TLS (use of a client certificate), OAuth2’s common flows (implicit, password, client credentials and authorization code) as defined in [RFC6749], and OpenID Connect Discovery. Please note that as of 2020, the implicit flow is about to be deprecated by OAuth 2.0 Security Best Current Practice. Recommended for most use case is Authorization Code Grant flow with PKCE."))
