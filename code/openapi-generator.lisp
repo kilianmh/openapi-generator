@@ -254,6 +254,5 @@ as dynamic parameters.."
        system))
     (when verbose
       (print (str:concat "The system " system-name " has been generated in the path: " (namestring project-pathname))))
-    (load-asd pathname-asd :name system-name)
     (when load-system
       (load-system (intern system-name)))))

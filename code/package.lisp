@@ -6,7 +6,7 @@
                 #:default-temporary-directory #:delete-file-if-exists
                 #:read-file-string #:file-exists-p #:ensure-pathname)
   (:import-from #:asdf
-                #:system-relative-pathname #:load-asd #:load-system)
+                #:system-relative-pathname #:load-system)
   (:import-from #:cl-project
                 #:make-project)
   (:import-from #:alexandria
