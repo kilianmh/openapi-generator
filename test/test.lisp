@@ -16,6 +16,6 @@
 (def-suite test-suite :description "Main Test Suite for Openapi-generator")
 
 (def-test parsing (:suite test-suite)
-  (finishes (openapi-generator:parse-openapi
+  (finishes (openapi-generator:parse-openapi "openai"
              :url "https://raw.githubusercontent.com/hirosystems/stacks-blockchain-api/gh-pages/openapi.resolved.yaml")))
 
