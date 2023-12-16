@@ -88,6 +88,14 @@
                  (paths api))
         result-list))))
 
+(defmacro generate-client (api &key (export-symbols t))
+  (let ((parsed-api (parse-openapi api)))
+    `(eval-when (:compile-toplevel :load-toplevel :execute)
+       ,@(values (generate-function-code parsed-api)
+		 (when export-symbols
+		   (export (mapcar (function intern)
+				    (collect-function-names parsed-api))))))))
+
 (defgeneric generate-slot-alias (api slot)
   (:documentation "Create list of setf with slot as alias")
   (:method ((api openapi) (slot string))
