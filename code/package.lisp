@@ -46,6 +46,7 @@
   (:import-from #:parse-float
                 #:parse-float)
   (:export #:parse-openapi
+	   #:generate-client
            #:make-openapi-client
            #:*dereference*
            #:dereference
