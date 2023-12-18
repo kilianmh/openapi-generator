@@ -88,13 +88,14 @@
                  (paths api))
         result-list))))
 
-(defmacro generate-client (api &key (export-symbols t))
-  (let ((parsed-api (parse-openapi api)))
+(defmacro generate-client (&key url content path (export-symbols t))
+  "Generates Common Lisp client by OpenAPI Spec."
+  (let ((specification (parse-openapi "generated" :source-directory path :url url :content content)))
     `(eval-when (:compile-toplevel :load-toplevel :execute)
-       ,@(values (generate-function-code parsed-api)
-		 (when export-symbols
-		   (export (mapcar (function intern)
-				    (collect-function-names parsed-api))))))))
+       ,@(generate-function-code specification)
+       ,(when export-symbols
+	  `(export ',(mapcar (function intern)
+			     (collect-function-names specification)))))))
 
 (defgeneric generate-slot-alias (api slot)
   (:documentation "Create list of setf with slot as alias")
