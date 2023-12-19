@@ -10,7 +10,7 @@
   (:import-from #:cl-project
                 #:make-project)
   (:import-from #:alexandria
-                #:length= #:define-constant #:string-designator)
+                #:length= #:define-constant #:string-designator #:when-let)
   (:import-from #:json-mop
                 #:json-serializable-class #:json-to-clos)
   (:import-from #:yason

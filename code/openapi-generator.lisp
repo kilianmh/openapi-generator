@@ -179,22 +179,19 @@ Prefered alias source is operation-id. Last resort option is path.")
          (generate-parameters :headers headers :authorization authorization :cookie cookie
                               :parse parse :server server)
          (string #\Newline)(string #\Newline)
-         (cl:format nil "~{~W~% ~}" (generate-function-code api))
-         (when (member :operation-id alias-list)
-           (let ((operation-id-alias
-                   (generate-slot-alias api "operation-id")))
-             (when operation-id-alias
-               (cl:format nil "~S" `(setf ,@operation-id-alias)))))
-         (when (member :summary alias-list)
-           (let ((summary-alias
-                   (generate-slot-alias api "summary")))
-             (when summary-alias
-               (cl:format nil "~S" `(setf ,@summary-alias)))))
-         (when (member :description alias-list)
-           (let ((description-alias
-                   (generate-slot-alias api "description")))
-             (when description-alias
-               (cl:format nil "~S" `(setf ,@description-alias))))))))))
+         (cl:format nil "~{~W~% ~}" (generate-function-code api :check-type check-type))
+	 (when-let (operation-id-alias
+		    (and (member :operation-id alias-list)
+			 (generate-slot-alias api "operation-id")))
+	   (cl:format nil "~S" operation-id-alias))
+	 (when-let (summary-alias
+		    (and (member :summary alias-list)
+			 (generate-slot-alias api "summary")))
+	   (cl:format nil "~S" summary-alias))
+	 (when-let (description-alias
+		    (and (member :description alias-list)
+			 (generate-slot-alias api "description")))
+	   (cl:format nil "~S" description-alias)))))))
 
 (defgeneric ensure-project-directory (directory)
   (:documentation "Makes sure that the directory is existing before the template is generated.")
