@@ -375,7 +375,7 @@ symbols will have numbers values are converted into strings at run time.")
   (:method ((json-type null))
     t))
 
-(defmethod json-content ((schema schema))
+(defmethod json-content ((schema schema) &key (check-type t))
   "Generate the code to validate request-body or generate it according to the spec."
   (let ((intern-content
           (intern "CONTENT"))
@@ -393,38 +393,47 @@ symbols will have numbers values are converted into strings at run time.")
                (declare (schema schema) (string name))
                `((com.inuoe.jzon:write-key* ,name)
                  (com.inuoe.jzon:write-value*
-                  (progn (assuref ,(intern-param name)
+		  ,(if check-type
+		       `(progn (assuref ,(intern-param name)
                                   ,(type-conversion (slot-value-safe schema (quote type))))
                          (or (ignore-errors (parse ,(intern-param name)))
-                             ,(intern-param name))))))
+                             ,(intern-param name)))
+		       (intern-param name))
+		  )))
              (optional (name schema)
                (declare (schema schema) (string name))
                (let ((name-symbol (intern-param name)))
                  `((when ,name-symbol
                      (com.inuoe.jzon:write-key* ,name)
                      (com.inuoe.jzon:write-value*
-                      (assuref ,name-symbol
-                               ,(type-conversion (slot-value-safe schema (quote type)))))))))
+                      ,(if check-type
+			   `(assuref ,name-symbol
+				   ,(type-conversion (slot-value-safe schema (quote type))))
+			   name-symbol))))))
              (optional-or-required (property)
                (declare (string property))
                (if (member property required-properties :test (function string-equal))
                    (funcall (function required) property (gethash property properties))
                    (funcall (function optional) property (gethash property properties)))))
       (remove nil `(cond (,intern-content
-                          ,(if (and (atom type-list)
-                                    (string-equal type-list (quote string)))
-                               `(assuref ,intern-content string)
-                               `(if (not (stringp (assuref ,intern-content ,type-list)))
-                                    (stringify ,intern-content)
-                                    ,intern-content)))
+			  ,(if check-type
+			       (if (and (atom type-list)
+					 (string-equal type-list (quote string)))
+				    `(assuref ,intern-content string)
+				    `(if (not (stringp (assuref ,intern-content ,type-list)))
+					 (stringify ,intern-content)
+					 ,intern-content))
+			       `(stringify ,intern-content)))
                          ,(when title
                             `(,title
-                              ,(if (and (atom type-list)
+			      ,(if check-type
+				  (if (and (atom type-list)
                                         (string-equal type-list (quote string)))
                                    `(assuref ,title string)
                                    `(if (not (stringp (assuref ,title ,type-list)))
                                         (stringify ,title)
-                                        ,title))))
+                                        ,title))
+				  `(stringify ,title))))
                          ,(when properties
                             (let ((property-names (delete "content"
                                                           (hash-keys properties)
@@ -461,9 +470,9 @@ symbols will have numbers values are converted into strings at run time.")
                          hash-keys)))))
            (slot-value operation (quote responses))))
 
-(defgeneric generate-function (api path operation-type)
+(defgeneric generate-function (api path operation-type &key check-type)
   (:documentation "Generate functions for all types of http request")
-  (:method ((api openapi) (path string) (operation-type symbol))
+  (:method ((api openapi) (path string) (operation-type symbol) &key (check-type t))
     (let* ((path-object      (gethash path (paths api)))
            (operation-object (slot-value path-object operation-type))
            (all-parameters   (collect-parameters path-object operation-type))
@@ -483,8 +492,9 @@ symbols will have numbers values are converted into strings at run time.")
            (intern-server-uri (intern "SERVER-URI")))
       `(defun ,(intern (function-name path operation-type :param-case nil)) ,lambda-list
 	 ,description
-         ,@(assure-required required-params)
-         ,@(assure-optional optional-params)
+	 ,@(when check-type
+	     (append (assure-required required-params)
+		     (assure-optional optional-params)))
          (let* ((,intern-server-uri
                   (uri (or ,(intern "SERVER")
                            ,primary-uri)))
@@ -497,7 +507,7 @@ symbols will have numbers values are converted into strings at run time.")
                               :query ,uri-query))
 	           ,@(if (member intern-content lambda-list)
                          `(:content ,(if json-body
-                                         (json-content json-body-schema)
+                                         (json-content json-body-schema :check-type check-type)
                                          intern-content))
                          (values))
 	           :method (quote ,(intern (symbol-name operation-type)))

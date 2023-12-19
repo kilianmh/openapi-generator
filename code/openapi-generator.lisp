@@ -70,13 +70,13 @@
                           (when (member :operation-id alias)
                             (collect-alias-exports api "operation-id")))))))
 
-(defgeneric generate-function-code (api)
+(defgeneric generate-function-code (api &key check-type)
   (:documentation "Generate all function code as list")
-  (:method ((api openapi))
+  (:method ((api openapi) &key (check-type t))
     (flet ((path-function-code (api path)
              "Create functions for each path operator"
              (mapcar (function (lambda (operator)
-	               (generate-function api path operator)))
+	               (generate-function api path operator :check-type check-type)))
 	             (collect-path-types (gethash path (paths api))))))
       (let ((result-list
               ()))
@@ -88,14 +88,17 @@
                  (paths api))
         result-list))))
 
-(defmacro generate-client (&key url content path (export-symbols t))
+(defmacro %generate-client (&key url content path (export-symbols t) (check-type t))
   "Generates Common Lisp client by OpenAPI Spec."
   (let ((specification (parse-openapi "generated" :source-directory path :url url :content content)))
     `(eval-when (:compile-toplevel :load-toplevel :execute)
-       ,@(generate-function-code specification)
+       ,@(generate-function-code specification :check-type check-type)
        ,(when export-symbols
 	  `(export ',(mapcar (function intern)
 			     (collect-function-names specification)))))))
+
+(defun generate-client (&key url content path (export-symbols t) (check-type t))
+  (eval `(%generate-client :url ,url :content ,content :path ,path :export-symbols ,export-symbols :check-type ,check-type)))
 
 (defgeneric generate-slot-alias (api slot)
   (:documentation "Create list of setf with slot as alias")
@@ -117,7 +120,7 @@
                                  result-list))))
                        (collect-path-types path-object))))
                (paths api))
-      result-list)))
+      (cons (quote setf) result-list))))
 
 (defgeneric generate-parameters (&key query headers authorization cookie parse server)
   (:documentation "Creates code to be included in main.lisp for parameters")
@@ -164,9 +167,9 @@ Prefered alias source is operation-id. Last resort option is path.")
           (push :path result-list))
         result-list))))
 
-(defgeneric generate-code (api name &key parse headers authorization server cookie alias)
+(defgeneric generate-code (api name &key parse headers authorization server cookie alias check-type)
   (:documentation "Generate all code to be included in the main.lisp file. Includes defpackage + functions + setf alias")
-  (:method (api name &key parse headers authorization server cookie alias)
+  (:method (api name &key parse headers authorization server cookie alias (check-type t))
     (let ((alias-list
             (check-api-slots api alias)))
       (let ((*print-case* :downcase))
@@ -217,7 +220,7 @@ Prefered alias source is operation-id. Last resort option is path.")
                               server parse headers authorization cookie
                               (alias (list :operation-id)) (system-directory :library) (load-system t)
                               openapi (api-name system-name) url source-directory collection-id content
-                              (dereference *dereference*) (verbose t))
+                              (dereference *dereference*) (verbose t) (check-type t))
   "Creates Openapi client by combining a project template with generated code.
 Source options are url, source-directory, collection-id, or openapi (openapi class instance).
 The options server, parse, headers, authorization, cookie, content are stored in the library code
@@ -256,7 +259,7 @@ as dynamic parameters.."
                            :content content))
         (intern (upcase system-name))
         :headers headers :authorization authorization :cookie cookie
-        :parse parse :alias alias :server server)
+        :parse parse :alias alias :server server :check-type check-type)
        system))
     (when verbose
       (print (str:concat "The system " system-name " has been generated in the path: " (namestring project-pathname))))
