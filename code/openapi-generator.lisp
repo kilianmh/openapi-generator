@@ -234,11 +234,7 @@ as dynamic parameters.."
            (make-pathname :directory (concat (trim (directory-namestring project-pathname)
                                                    :char-bag "/")
                                              "/src")
-                          :name "main" :type "lisp"))
-         (pathname-asd
-           (make-pathname :directory (trim (directory-namestring project-pathname)
-                                           :char-bag "/")
-                          :name system-name :type "asd")))
+                          :name "main" :type "lisp")))
     (make-project
      project-pathname
      :name system-name
