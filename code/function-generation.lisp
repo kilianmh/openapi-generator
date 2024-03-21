@@ -301,8 +301,15 @@ symbols will have numbers values are converted into strings at run time.")
   (:documentation "Generate query (if there are parameters)")
   (:method ((parameters list))
     (let ((generated-list
-            (gen-alist (mapcar (function name)
-                               (get-parameter-type "query" parameters)))))
+            (mapcar (lambda (parameter)
+                      (let ((interned (intern (upcase (param-case (name parameter))))))
+                        `(cons ,(name parameter)
+                               ,(if (eq 'boolean (parameter-schema-type parameter))
+                                    `(if ,interned
+                                         "true"
+                                         "false")
+                                    interned))))
+                    (get-parameter-type "query" parameters))))
       (case (length generated-list)
         (0 `(remove-empty-values
              (when ,(intern "QUERY") ,(intern "QUERY"))))
