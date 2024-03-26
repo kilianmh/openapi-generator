@@ -484,8 +484,9 @@ symbols will have numbers values are converted into strings at run time.")
                 (,intern-response
                   (request
                    (render-uri
-	            (make-uri :scheme (uri-scheme ,intern-server-uri)
+                    (make-uri :scheme (uri-scheme ,intern-server-uri)
                               :host (uri-host ,intern-server-uri)
+                              :port (uri-port ,intern-server-uri)
                               :path ,uri-path
                               :query ,uri-query))
 	           ,@(if (member intern-content lambda-list)

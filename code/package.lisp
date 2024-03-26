@@ -26,7 +26,7 @@
   (:import-from #:listopia
                 #:intersperse)
   (:import-from #:quri
-                #:uri #:uri-scheme #:uri-host #:uri-path
+                #:uri #:uri-scheme #:uri-host #:uri-port #:uri-path
                 #:make-uri #:render-uri #:merge-uris)
   (:import-from #:dexador
                 #:request)
