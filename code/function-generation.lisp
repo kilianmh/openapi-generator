@@ -510,6 +510,7 @@ symbols will have numbers values are converted into strings at run time.")
                    (render-uri
 	            (make-uri :scheme (uri-scheme ,intern-server-uri)
                               :host (uri-host ,intern-server-uri)
+			      :port (uri-port ,intern-server-uri)
                               :path (concat (uri-path ,intern-server-uri) ,uri-path)
                               :query ,uri-query))
 	           ,@(if (member intern-content lambda-list)

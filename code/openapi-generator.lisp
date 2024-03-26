@@ -54,7 +54,7 @@
        (:import-from #:cl
                      #:append #:declaim #:declare #:ignorable #:optimize #:speed #:space #:safety #:debug #:compilation-speed #:defparameter #:null
                      #:case #:array #:write-to-string #:setf #:defparameter #:defun #:fdefinition #:t #:nil #:&key #:when #:let* #:or #:if #:cdr #:assoc #:quote #:string-equal #:cons #:list #:cond #:find #:warn #:boundp #:symbol-value #:string #:integer #:number #:boolean #:let #:unless #:make-string-output-stream #:get-output-stream-string #:string= #:hash-table #:stream #:typep #:progn #:ignore-errors #:stringp #:not #:otherwise)
-       (:import-from #:quri #:uri #:make-uri #:render-uri #:uri-scheme #:uri-host)
+       (:import-from #:quri #:uri #:make-uri #:render-uri #:uri-scheme #:uri-host #:uri-port)
        (:import-from #:str #:concat)
        (:import-from #:com.inuoe.jzon #:parse #:with-writer* #:write-key* #:write-value* #:stringify)
        (:import-from #:openapi-generator #:remove-empty-values #:json-null #:json-number #:json-array #:json-object #:json-false #:json-true)
