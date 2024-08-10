@@ -17,12 +17,12 @@
     (flet ((path-function-names (api path &key param-case)
              (mapcar (function (lambda (operator)
                        (function-name path operator :param-case param-case)))
-	             (collect-path-types (gethash path (paths api))))))
+                     (collect-path-types (gethash path (paths api))))))
       (let ((names nil))
         (maphash (function (lambda (path value)
-		   (declare (ignore value))
-		   (push (path-function-names api path :param-case param-case) names)))
-	         (paths api))
+                   (declare (ignore value))
+                   (push (path-function-names api path :param-case param-case) names)))
+                 (paths api))
         (listopia:concat names)))))
 
 (defgeneric collect-alias-exports (api slot)
@@ -50,7 +50,7 @@
   (:documentation "Generate defpackage code including alias functions")
   (:method (name (api openapi) &key alias)
     `(uiop:define-package ,(intern (upcase name))
-       (:use)
+         (:use)
        (:import-from #:cl #:t #:nil)
        (:export #:*bearer* #:*authorization* #:*headers* #:*cookie* #:*parse* #:*server*
                 ,@(append (when (member :path alias)
@@ -68,8 +68,8 @@
     (flet ((path-function-code (api path)
              "Create functions for each path operator"
              (mapcar (function (lambda (operator)
-	               (generate-function api path operator :check-type check-type)))
-	             (collect-path-types (gethash path (paths api))))))
+                       (generate-function api path operator :check-type check-type)))
+                     (collect-path-types (gethash path (paths api))))))
       (let ((result-list
               ()))
         (maphash (function (lambda (path value)
@@ -83,25 +83,25 @@
 (defmacro %generate-client (&key api url content path (export-symbols t) (check-type t) (converter-url *converter-url*))
   "Generates Common Lisp client by OpenAPI Spec."
   (let ((specification (or api
-			   (parse-openapi "generated"
-					  :source-directory path
-					  :url url
-					  :content content
-					  :converter-url converter-url))))
+                           (parse-openapi "generated"
+                                          :source-directory path
+                                          :url url
+                                          :content content
+                                          :converter-url converter-url))))
     `(eval-when (:compile-toplevel :load-toplevel :execute)
        ,@(generate-function-code specification :check-type check-type)
        ,(when export-symbols
-	  `(export ',(mapcar (function intern)
-			     (collect-function-names specification)))))))
+          `(export ',(mapcar (function intern)
+                             (collect-function-names specification)))))))
 
 (defun generate-client (&key api url content path (export-symbols t) (check-type t) (converter-url *converter-url*))
   (eval `(%generate-client :api ,api
-			   :url ,url
-			   :content ,content
-			   :path ,path
-			   :export-symbols ,export-symbols
-			   :check-type ,check-type
-			   :converter-url ,converter-url)))
+                           :url ,url
+                           :content ,content
+                           :path ,path
+                           :export-symbols ,export-symbols
+                           :check-type ,check-type
+                           :converter-url ,converter-url)))
 
 (defgeneric generate-slot-alias (api slot)
   (:documentation "Create list of setf with slot as alias")
@@ -117,11 +117,11 @@
                                               slot)
                            (unless exist-p
                              (return-from generate-slot-alias))
-			   (push (list (quote serapeum:defalias)
-				       (intern (upcase (param-case value)))
-				       (list (quote quote)
-					     (intern (function-name path operator :param-case nil))))
-				 result-list))))
+                           (push (list (quote serapeum:defalias)
+                                       (intern (upcase (param-case value)))
+                                       (list (quote quote)
+                                             (intern (function-name path operator :param-case nil))))
+                                 result-list))))
                        (collect-path-types path-object))))
                (paths api))
       (cons (quote progn) result-list))))
@@ -131,15 +131,15 @@
   (:documentation "Creates code to be included in main.lisp for parameters")
   (:method (&key query headers authorization bearer cookie parse server)
     (let ((*print-case* :downcase)
-	  (*package* (find-package 'dummy-printing-package)))
+          (*package* (find-package 'dummy-printing-package)))
       (cl:format cl:nil "~{~S~%~}"
                  (cl:list `(cl:defparameter ,(cl:intern "*PARSE*") ,(cl:when parse parse))
-			  `(cl:defparameter ,(cl:intern "*AUTHORIZATION*") ,authorization)
-			  `(cl:defparameter ,(cl:intern "*BEARER*") ,bearer)
-			  `(cl:defparameter ,(cl:intern "*SERVER*") ,server)
-			  `(cl:defparameter ,(cl:intern "*COOKIE*") ,cookie)
-			  `(cl:defparameter ,(cl:intern "*HEADERS*") ',headers)
-			  `(cl:defparameter ,(cl:intern "*QUERY*") ',query))))))
+                          `(cl:defparameter ,(cl:intern "*AUTHORIZATION*") ,authorization)
+                          `(cl:defparameter ,(cl:intern "*BEARER*") ,bearer)
+                          `(cl:defparameter ,(cl:intern "*SERVER*") ,server)
+                          `(cl:defparameter ,(cl:intern "*COOKIE*") ,cookie)
+                          `(cl:defparameter ,(cl:intern "*HEADERS*") ',headers)
+                          `(cl:defparameter ,(cl:intern "*QUERY*") ',query))))))
 
 (defgeneric check-api-slots (api list)
   (:documentation "Make sure that the function (alias) can be generated.
@@ -181,9 +181,9 @@ Prefered alias source is operation-id. Last resort option is path.")
     (let ((alias-list
             (check-api-slots api alias)))
       (let ((*print-case* :downcase)
-	    (*package* (find-package 'dummy-printing-package))
-	    (*print-readably* t)
-	    (*print-escape* nil))
+            (*package* (find-package 'dummy-printing-package))
+            (*print-readably* t)
+            (*print-escape* nil))
         (concat
          (cl:format nil "~S" (generate-defpackage name api :alias alias-list))
          (string #\Newline)(string #\Newline)
@@ -191,22 +191,22 @@ Prefered alias source is operation-id. Last resort option is path.")
          (string #\Newline)(string #\Newline)
          (string #\Newline)(string #\Newline)
          (generate-parameters :headers headers :authorization authorization :bearer bearer
-			      :cookie cookie :parse parse :server server)
+                              :cookie cookie :parse parse :server server)
          (string #\Newline)(string #\Newline)
          (cl:format nil "~{~W~% ~}" (generate-function-code api :check-type check-type)
-		    )
-	 (when-let (operation-id-alias
-		    (and (member :operation-id alias-list)
-			 (generate-slot-alias api "operation-id")))
-	   (cl:format nil "~S" operation-id-alias))
-	 (when-let (summary-alias
-		    (and (member :summary alias-list)
-			 (generate-slot-alias api "summary")))
-	   (cl:format nil "~S" summary-alias))
-	 (when-let (description-alias
-		    (and (member :description alias-list)
-			 (generate-slot-alias api "description")))
-	   (cl:format nil "~S" description-alias)))))))
+                    )
+         (when-let (operation-id-alias
+                    (and (member :operation-id alias-list)
+                         (generate-slot-alias api "operation-id")))
+           (cl:format nil "~S" operation-id-alias))
+         (when-let (summary-alias
+                    (and (member :summary alias-list)
+                         (generate-slot-alias api "summary")))
+           (cl:format nil "~S" summary-alias))
+         (when-let (description-alias
+                    (and (member :description alias-list)
+                         (generate-slot-alias api "description")))
+           (cl:format nil "~S" description-alias)))))))
 
 (defgeneric ensure-project-directory (directory)
   (:documentation "Makes sure that the directory is existing before the template is generated.")
@@ -233,7 +233,7 @@ Prefered alias source is operation-id. Last resort option is path.")
                               (alias (list :operation-id)) (system-directory :library) (load-system t)
                               openapi (api-name system-name) url source-directory collection-id content
                               (dereference *dereference*) (verbose t) (check-type t)
-			      (converter-url *converter-url*))
+                              (converter-url *converter-url*))
   "Creates Openapi client by combining a project template with generated code.
 Source options are url, source-directory, collection-id, or openapi (openapi class instance).
 The options server, parse, headers, authorization, bearer, cookie, content are stored in the library code
@@ -263,9 +263,9 @@ as dynamic parameters.."
             (parse-openapi api-name
                            :url url
                            :source-directory (cond ((pathnamep source-directory)
-						    source-directory)
-						   (source-directory
-						    (pathname source-directory)))
+                                                    source-directory)
+                                                   (source-directory
+                                                    (pathname source-directory)))
                            :collection-id collection-id
                            :dereference dereference
                            :content content

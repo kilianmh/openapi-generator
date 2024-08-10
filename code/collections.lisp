@@ -5,12 +5,12 @@
 
 (define-json-class apis-guru-api nil
   (("added" :string
-	    :documentation "Timestamp when the API was first added to the directory")
+            :documentation "Timestamp when the API was first added to the directory")
    ("preferred" :string
-		:reader preferred
-		:documentation "Recommended version")
+                :reader preferred
+                :documentation "Recommended version")
    ("versions" (:hash-table apis-guru-api-version)
-	       :reader versions)))
+               :reader versions)))
 
 (defmethod print-object ((object apis-guru-api) stream)
   (print-unreadable-object (object stream :type t)
@@ -19,21 +19,21 @@
                (preferred object))))
 
 (define-json-class apis-guru-api-version nil
-            (("added" :string
-                      :documentation "Timestamp when the version was added")
-             ("externalDocs" apis-guru-external-documentation
-                             :documentation "Copy of `externalDocs` s…from OpenAPI definition")
-             ("info" apis-guru-info
-                     :reader info
-                     :documentation "Copy of `info` section from OpenAPI definition")
-             ("swaggerURL" :string
-                           :documentation "URL to OpenAPI definition in JSON format")
-             ("swaggerYamlUrl" :string
-                               :documentation "URL to OpenAPI definition in YAML format")
-             ("updated" :any ; should be string or nil
-                        :reader updated
-                        :documentation "Timestamp when the version was updated")
-             ("openapiVer" :string)))
+  (("added" :string
+            :documentation "Timestamp when the version was added")
+   ("externalDocs" apis-guru-external-documentation
+                   :documentation "Copy of `externalDocs` s…from OpenAPI definition")
+   ("info" apis-guru-info
+           :reader info
+           :documentation "Copy of `info` section from OpenAPI definition")
+   ("swaggerURL" :string
+                 :documentation "URL to OpenAPI definition in JSON format")
+   ("swaggerYamlUrl" :string
+                     :documentation "URL to OpenAPI definition in YAML format")
+   ("updated" :any ; should be string or nil
+              :reader updated
+              :documentation "Timestamp when the version was updated")
+   ("openapiVer" :string)))
 
 (define-json-class apis-guru-external-documentation (external-documentation)
   (("updated" :string)))

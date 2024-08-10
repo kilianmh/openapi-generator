@@ -17,15 +17,15 @@ It simply uses uiop:read-file-string. There is also uiop:read-file-lines."
 
 (defun slot-option-p (item)
   (member item (list :reader :write :accessor :allocation
-		     :initarg :initform :type :documentation
-		     :json-type :json-key :required)))
+                     :initarg :initform :type :documentation
+                     :json-type :json-key :required)))
 
 (deftype slot-option ()
   '(and keyword (satisfies slot-option-p)))
 
 (defun json-mop-type-p (item)
   (member item (list :any :string :integer :number :hash-table
-			  :vector :list :bool)))
+                          :vector :list :bool)))
 
 (deftype json-mop-type ()
   (quote (and keyword (satisfies json-mop-type-p))))
@@ -36,7 +36,7 @@ It simply uses uiop:read-file-string. There is also uiop:read-file-lines."
 (defun json-mop-composite-type-p (item)
   (and (member (first item) (list :hash-table :vector :list))
        (typep (second item) '(or json-mop-type
-			      non-keyword-symbol))))
+                              non-keyword-symbol))))
 
 (deftype json-mop-composite-type ()
   (quote
@@ -44,45 +44,45 @@ It simply uses uiop:read-file-string. There is also uiop:read-file-lines."
 
 (defmacro define-json-class (name direct-superclasses direct-slots &rest options)
   (flet ((expand-slot (slot-specifier)
-	   (etypecase slot-specifier
-	     (string
-	      (list (intern (string-upcase (str:param-case slot-specifier)))
-		    :json-key slot-specifier))
-	     (cons
-	      (let ((first
-		   (first slot-specifier))
-		 (second
-		   (second slot-specifier)))
-	     (etypecase first
-	       (symbol
-		(etypecase second
-		  (slot-option
-		   slot-specifier)
-		  (string
-		   (let ((third
-			   (third slot-specifier)))
-		     (etypecase third
-		       (slot-option
-			(list* first :json-key second (cddr slot-specifier)))
-		       ((or json-mop-type non-keyword-symbol json-mop-composite-type)
-			(list* first :json-key second :json-type third
-			       (cdddr slot-specifier))))))))
-	       (string
-		(let ((slot-name
-			(intern (string-upcase (str:param-case first)))))
-		  (if (= (length slot-specifier) 1)
-		      (list slot-name :json-key first)
-		      (etypecase second
-			(slot-option
-			 (list* slot-name :json-key first
-				(cdr slot-specifier)))
-			((or non-keyword-symbol json-mop-type json-mop-composite-type)
-			 (list* slot-name :json-key first :json-type second
-				(cddr slot-specifier)))))))))))))
+           (etypecase slot-specifier
+             (string
+              (list (intern (string-upcase (str:param-case slot-specifier)))
+                    :json-key slot-specifier))
+             (cons
+              (let ((first
+                      (first slot-specifier))
+                    (second
+                      (second slot-specifier)))
+                (etypecase first
+                  (symbol
+                   (etypecase second
+                     (slot-option
+                      slot-specifier)
+                     (string
+                      (let ((third
+                              (third slot-specifier)))
+                        (etypecase third
+                          (slot-option
+                           (list* first :json-key second (cddr slot-specifier)))
+                          ((or json-mop-type non-keyword-symbol json-mop-composite-type)
+                           (list* first :json-key second :json-type third
+                                  (cdddr slot-specifier))))))))
+                  (string
+                   (let ((slot-name
+                           (intern (string-upcase (str:param-case first)))))
+                     (if (= (length slot-specifier) 1)
+                         (list slot-name :json-key first)
+                         (etypecase second
+                           (slot-option
+                            (list* slot-name :json-key first
+                                   (cdr slot-specifier)))
+                           ((or non-keyword-symbol json-mop-type json-mop-composite-type)
+                            (list* slot-name :json-key first :json-type second
+                                   (cddr slot-specifier)))))))))))))
     (list* 'defclass name direct-superclasses
-	   (mapcar #'expand-slot direct-slots)
-	   (list :metaclass 'json-mop:json-serializable-class)
-	   options)))
+           (mapcar #'expand-slot direct-slots)
+           (list :metaclass 'json-mop:json-serializable-class)
+           options)))
 
 (defgeneric concat-strings (list)
   (:documentation "Concatenates strings together and breaks when other element comes")

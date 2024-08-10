@@ -117,7 +117,7 @@
   (:documentation "Generate unique symbole name for given operation-type and path")
   (:method ((path string) (operation-type symbol) &key param-case)
     (concat (symbol-name operation-type)
-	    (upcase (if param-case
+            (upcase (if param-case
                         (concat "-" (param-case path))
                         path)))))
 
@@ -218,17 +218,17 @@
   (:documentation "Generate code for run-time type checking of required arguments")
   (:method ((required-parameter parameter))
     (let ((*print-case* :downcase)
-	  (*package* (find-package 'dummy-printing-package))
-	  (types
-	    (parameter-schema-type required-parameter)))
+          (*package* (find-package 'dummy-printing-package))
+          (types
+            (parameter-schema-type required-parameter)))
       (cl:read-from-string (cl:format nil "~{~W~% ~}" (cl:list `(assuref ,(cl:intern (upcase (param-case (name required-parameter))))
-					     ,(if (consp types)
-						  (mapcar (lambda (type)
-							   (intern (symbol-name type)
-								   :common-lisp))
-							 types)
-						  (intern (symbol-name types)
-							  :common-lisp))))))))
+                                                                         ,(if (consp types)
+                                                                              (mapcar (lambda (type)
+                                                                                        (intern (symbol-name type)
+                                                                                                :common-lisp))
+                                                                                      types)
+                                                                              (intern (symbol-name types)
+                                                                                      :common-lisp))))))))
   (:method ((required-parameters list))
     (mapcar (function (lambda (parameter)
               (funcall (function assure-required) parameter)))
@@ -242,23 +242,23 @@ This only happens, if arguments supplied.")
             (parameter-schema-type optional-parameter))
           (parameter-symbol
             (intern (upcase (param-case (name optional-parameter)))))
-	  (*print-case* :downcase)
-	  (*package* (find-package 'dummy-printing-package)))
+          (*print-case* :downcase)
+          (*package* (find-package 'dummy-printing-package)))
       (cl:when (cl:and types
-                 (cl:not (cl:string-equal "content-type" parameter-symbol)))
+                       (cl:not (cl:string-equal "content-type" parameter-symbol)))
         (cl:read-from-string
-	 (cl:format nil "~{~W~% ~}"
-		    (cl:list
-		     `(cl:when ,parameter-symbol
-			(serapeum:assuref
-			 ,parameter-symbol
-			 ,(if (consp types)
-			      (mapcar (lambda (type)
-				       (intern (symbol-name type)
-					       :cl))
-				     types)
-			      (intern (symbol-name types)
-				      :cl))))))))))
+         (cl:format nil "~{~W~% ~}"
+                    (cl:list
+                     `(cl:when ,parameter-symbol
+                        (serapeum:assuref
+                         ,parameter-symbol
+                         ,(if (consp types)
+                              (mapcar (lambda (type)
+                                        (intern (symbol-name type)
+                                                :cl))
+                                      types)
+                              (intern (symbol-name types)
+                                      :cl))))))))))
   (:method ((optional-parameter list))
     (mapcar (function (lambda (parameter)
               (funcall (function assure-optional) parameter)))
@@ -269,18 +269,18 @@ This only happens, if arguments supplied.")
   (:method ((path string))
     (remove-if (function emptyp)
                (mapcar
-                      (function (lambda (sequence)
-                        (if (starts-with-p "{" sequence)
-                            (intern (upcase
-                                     (param-case
-                                      (substring 1
-                                                 (1- (length sequence))
-                                                 sequence))))
-                            sequence)))
-                      (split " "
-                             (replace-using (list "/" " / "
-                                                  "." " . ")
-                                            path))))))
+                (function (lambda (sequence)
+                  (if (starts-with-p "{" sequence)
+                      (intern (upcase
+                               (param-case
+                                (substring 1
+                                           (1- (length sequence))
+                                           sequence))))
+                      sequence)))
+                (split " "
+                       (replace-using (list "/" " / "
+                                            "." " . ")
+                                      path))))))
 
 (defgeneric path-list-stringified (path-list parameter-list)
   (:documentation "Get a list where symbols that will have a value of type strings are untouched, while
@@ -299,18 +299,18 @@ symbols will have numbers values are converted into strings at run time.")
                  (mapcar (function (lambda (item)
                            (typecase item
                              (symbol
-			      (let ((parameter-schema-type
-				      (parameter-schema-type
-				       (get-parameter-by-name (symbol-name item)
-							      parameter-list))))
-				(if (consp parameter-schema-type)
-				    (list 'format nil "~A" item)
-				    (case-using (function string-equal)
-					parameter-schema-type
-				      ((number integer)
-				       (list 'write-to-string item))
-				      (otherwise
-				       item)))))
+                              (let ((parameter-schema-type
+                                      (parameter-schema-type
+                                       (get-parameter-by-name (symbol-name item)
+                                                              parameter-list))))
+                                (if (consp parameter-schema-type)
+                                    (list 'format nil "~A" item)
+                                    (case-using (function string-equal)
+                                        parameter-schema-type
+                                      ((number integer)
+                                       (list 'write-to-string item))
+                                      (otherwise
+                                       item)))))
                              (string item))))
                          path-list)))))
 
@@ -373,7 +373,7 @@ symbols will have numbers values are converted into strings at run time.")
                      :test (function string-equal))))
           (standard-headers
             `((when ,(intern "AUTHORIZATION")
-		(cl:cons "Authorization" ,(intern "AUTHORIZATION")))
+                (cl:cons "Authorization" ,(intern "AUTHORIZATION")))
               (cl:cons "cookie" ,(intern "COOKIE")))))
       (when content-type-list
         (push content-type-list standard-headers))
@@ -429,13 +429,13 @@ symbols will have numbers values are converted into strings at run time.")
                (declare (schema schema) (string name))
                `((com.inuoe.jzon:write-key* ,name)
                  (com.inuoe.jzon:write-value*
-		  ,(if check-type
-		       `(progn (assuref ,(intern-param name)
-                                  ,(type-conversion (slot-value-safe schema (quote type))))
-                         (or (ignore-errors (parse ,(intern-param name)))
-                             ,(intern-param name)))
-		       (intern-param name))
-		  )))
+                  ,(if check-type
+                       `(progn (assuref ,(intern-param name)
+                                        ,(type-conversion (slot-value-safe schema (quote type))))
+                               (or (ignore-errors (parse ,(intern-param name)))
+                                   ,(intern-param name)))
+                       (intern-param name))
+                  )))
              (optional (name schema)
                (declare (schema schema) (string name))
                (let ((name-symbol (intern-param name)))
@@ -443,33 +443,33 @@ symbols will have numbers values are converted into strings at run time.")
                      (com.inuoe.jzon:write-key* ,name)
                      (com.inuoe.jzon:write-value*
                       ,(if check-type
-			   `(assuref ,name-symbol
-				   ,(type-conversion (slot-value-safe schema (quote type))))
-			   name-symbol))))))
+                           `(assuref ,name-symbol
+                                     ,(type-conversion (slot-value-safe schema (quote type))))
+                           name-symbol))))))
              (optional-or-required (property)
                (declare (string property))
                (if (member property required-properties :test (function string-equal))
                    (funcall (function required) property (gethash property properties))
                    (funcall (function optional) property (gethash property properties)))))
       (remove nil `(cond (,intern-content
-			  ,(if check-type
-			       (if (and (atom type-list)
-					 (string-equal type-list (quote string)))
-				    `(assuref ,intern-content string)
-				    `(if (not (stringp (assuref ,intern-content ,type-list)))
-					 (stringify ,intern-content)
-					 ,intern-content))
-			       `(stringify ,intern-content)))
+                          ,(if check-type
+                               (if (and (atom type-list)
+                                        (string-equal type-list (quote string)))
+                                   `(assuref ,intern-content string)
+                                   `(if (not (stringp (assuref ,intern-content ,type-list)))
+                                        (stringify ,intern-content)
+                                        ,intern-content))
+                               `(stringify ,intern-content)))
                          ,(when title
                             `(,title
-			      ,(if check-type
-				  (if (and (atom type-list)
-                                        (string-equal type-list (quote string)))
-                                   `(assuref ,title string)
-                                   `(if (not (stringp (assuref ,title ,type-list)))
-                                        (stringify ,title)
-                                        ,title))
-				  `(stringify ,title))))
+                              ,(if check-type
+                                   (if (and (atom type-list)
+                                            (string-equal type-list (quote string)))
+                                       `(assuref ,title string)
+                                       `(if (not (stringp (assuref ,title ,type-list)))
+                                            (stringify ,title)
+                                            ,title))
+                                   `(stringify ,title))))
                          ,(when properties
                             (let ((property-names (delete "content"
                                                           (hash-keys properties)
@@ -519,7 +519,7 @@ symbols will have numbers values are converted into strings at run time.")
            (lambda-list      (get-lambda-list required-params optional-params operation-object
                                               json-body-schema))
            (response-type    (get-response-type operation-object))
-	   (description      (get-description operation-object))
+           (description      (get-description operation-object))
            (primary-uri      (get-primary-uri api))
            (uri-path         (get-path path all-parameters))
            (uri-query        (get-query all-parameters))
@@ -527,29 +527,29 @@ symbols will have numbers values are converted into strings at run time.")
            (intern-content   (intern "CONTENT"))
            (intern-server-uri (intern "SERVER-URI")))
       `(defun ,(intern (function-name path operation-type :param-case nil)) ,lambda-list
-	 ,description
-	 ,@(when check-type
-	     (append (assure-required required-params)
-		     (assure-optional optional-params)))
+         ,description
+         ,@(when check-type
+             (append (assure-required required-params)
+                     (assure-optional optional-params)))
          (let* ((,intern-server-uri
                   (uri (or ,(intern "SERVER")
                            ,primary-uri)))
                 (,intern-response
                   (request
                    (render-uri
-	            (make-uri :scheme (uri-scheme ,intern-server-uri)
+                    (make-uri :scheme (uri-scheme ,intern-server-uri)
                               :host (uri-host ,intern-server-uri)
-			      :port (uri-port ,intern-server-uri)
+                              :port (uri-port ,intern-server-uri)
                               :path (concat (uri-path ,intern-server-uri) ,uri-path)
                               :query ,uri-query))
-	           ,@(if (member intern-content lambda-list)
+                   ,@(if (member intern-content lambda-list)
                          `(:content ,(if json-body
                                          (json-content json-body-schema :check-type check-type)
                                          intern-content))
                          (values))
-	           :method (quote ,(intern (symbol-name operation-type)))
-		   :bearer-auth ,(intern "BEARER")
-	           :headers ,(get-headers all-parameters operation-object))))
+                   :method (quote ,(intern (symbol-name operation-type)))
+                   :bearer-auth ,(intern "BEARER")
+                   :headers ,(get-headers all-parameters operation-object))))
            ,(if response-type
                 (case response-type
                   (:json `(if ,(intern "PARSE")

@@ -34,28 +34,28 @@ Supported are: url / apis-guru / path / name (in openapi-generator/data folder)"
   (:method ((file-name string) (url string) &key (converter-url *converter-url*) dereference)
     (to-file (get-data-file file-name)
              (funcall (function parse-url) nil url
-		      :converter-url converter-url
-		      :dereference dereference)))
+                      :converter-url converter-url
+                      :dereference dereference)))
   (:method ((file-name null) (url string) &key (converter-url *converter-url*) dereference)
     (let* ((url-ending
-            (substring (- (length url) 4)
-                       (length url)
-                       url))
-	  (converted-content
-	    (case-using (function string-equal) url-ending
-	      (("yaml" ".yml")
-	       (convert-to-openapi-3 :url url :converter-url converter-url))
-	      ("json"
-	       (let ((result
-		       (dex:get url)))
-		 (if (eql (get-openapi-version result)
-			  (quote openapi-2.0))
-		     (convert-to-openapi-3 :url url :converter-url converter-url)
-		     result))))))
+             (substring (- (length url) 4)
+                        (length url)
+                        url))
+           (converted-content
+             (case-using (function string-equal) url-ending
+               (("yaml" ".yml")
+                (convert-to-openapi-3 :url url :converter-url converter-url))
+               ("json"
+                (let ((result
+                        (dex:get url)))
+                  (if (eql (get-openapi-version result)
+                           (quote openapi-2.0))
+                      (convert-to-openapi-3 :url url :converter-url converter-url)
+                      result))))))
       (if dereference
-	  (stringify (dereference (parse converted-content)
-		       :path-uri (quri:uri url)))
-	  converted-content))))
+          (stringify (dereference (parse converted-content)
+                                  :path-uri (quri:uri url)))
+          converted-content))))
 
 (defgeneric parse-string (file-name file &key converter-url)
   (:documentation "Safe string to file in local folder")
@@ -68,7 +68,7 @@ Supported are: url / apis-guru / path / name (in openapi-generator/data folder)"
              (to-file target-directory
                       (convert-to-openapi-3 :content file
                                             :content-type "json"
-					    :converter-url converter-url)))
+                                            :converter-url converter-url)))
             ((openapi-3.0 openapi-3.1)
              file)
             (otherwise
@@ -81,21 +81,21 @@ Supported are: url / apis-guru / path / name (in openapi-generator/data folder)"
   (:method ((source-directory pathname) (target-directory pathname) &key (converter-url *converter-url*) dereference)
     (let* ((file-content
              (if dereference
-		 (stringify (dereference (pathname source-directory)))
-		 (from-file source-directory)))
+                 (stringify (dereference (pathname source-directory)))
+                 (from-file source-directory)))
            (json-content
              (ecase-using (function string=) (file-type source-directory)
                ("yaml"
                 (to-file target-directory
                          (convert-to-openapi-3 :content file-content
-					       :content-type "yaml"
-					       :converter-url converter-url)))
+                                               :content-type "yaml"
+                                               :converter-url converter-url)))
                ("json"
                 (if (eql (get-openapi-version file-content)
                          (quote openapi-2.0))
                     (to-file target-directory
                              (convert-to-openapi-3 :content file-content
-						   :converter-url converter-url))
+                                                   :converter-url converter-url))
                     file-content)))))
       json-content)))
 
@@ -107,7 +107,7 @@ Supported are: url / apis-guru / path / name (in openapi-generator/data folder)"
 (defmethod ensure-json ((content string))
   "Ensures document is a json"
   (let ((first-letter
-	   (subseq content 0 1)))
+          (subseq content 0 1)))
     (serapeum:case-using #'string= first-letter
       (("[" "{") content)
       (t (stringify (cl-yaml:parse content))))))
@@ -141,46 +141,46 @@ Also grab external files.
                    (hash-table
                     (let ((pointer (gethash "$ref" entry)))
                       (if (and pointer (stringp pointer))
-			  (if (member pointer used-pointer :test (function string=))
+                          (if (member pointer used-pointer :test (function string=))
                               (unless (member pointer circular-pointer :test (function string=))
                                 (push pointer circular-pointer)
                                 (warn "circular pointer detected in ~A" pointer))
-			      (if (str:starts-with-p "." pointer)
-				  (let* ((split-pointer
-					   (str:split "#" pointer))
-					 (document-location
-					   (first split-pointer))
-					 (next-pointer
-					   (second split-pointer))
-					 (rendered-uri
-					   (quri:render-uri (quri:merge-uris document-location (or path-uri
-												   (namestring pathname)))))
-					 (next-document nil))
-				    (cond (path-uri
-					   (setf next-document
-						 (ensure-json (dex:get rendered-uri))))
-					  (pathname
-					   (setf next-document
-						 (ensure-json (str:from-file (pathname rendered-uri))))))
-				    (setf (hash-get dereferenced-table path)
-					  (if next-pointer
-					      (get-by-json-pointer
-					       next-document
-					       next-pointer)
-					      (parse next-document))))
-				  (let ((pointer-value
-					  (get-by-json-pointer dereferenced-table pointer)))
-				    (etypecase pointer-value
-				      (null nil)
-				      (hash-table
-				       (map-ht (setf (hash-get dereferenced-table path)
-						     (hash-copy-recursive pointer-value))
-					       (cons pointer used-pointer) path))
-				      (vector
-				       (map-vector (setf (hash-get dereferenced-table path)
-							 (copy-seq pointer-value))
-						   (cons pointer used-pointer)
-						   path))))))
+                              (if (str:starts-with-p "." pointer)
+                                  (let* ((split-pointer
+                                           (str:split "#" pointer))
+                                         (document-location
+                                           (first split-pointer))
+                                         (next-pointer
+                                           (second split-pointer))
+                                         (rendered-uri
+                                           (quri:render-uri (quri:merge-uris document-location (or path-uri
+                                                                                                   (namestring pathname)))))
+                                         (next-document nil))
+                                    (cond (path-uri
+                                           (setf next-document
+                                                 (ensure-json (dex:get rendered-uri))))
+                                          (pathname
+                                           (setf next-document
+                                                 (ensure-json (str:from-file (pathname rendered-uri))))))
+                                    (setf (hash-get dereferenced-table path)
+                                          (if next-pointer
+                                              (get-by-json-pointer
+                                               next-document
+                                               next-pointer)
+                                              (parse next-document))))
+                                  (let ((pointer-value
+                                          (get-by-json-pointer dereferenced-table pointer)))
+                                    (etypecase pointer-value
+                                      (null nil)
+                                      (hash-table
+                                       (map-ht (setf (hash-get dereferenced-table path)
+                                                     (hash-copy-recursive pointer-value))
+                                               (cons pointer used-pointer) path))
+                                      (vector
+                                       (map-vector (setf (hash-get dereferenced-table path)
+                                                         (copy-seq pointer-value))
+                                                   (cons pointer used-pointer)
+                                                   path))))))
                           (map-ht entry used-pointer path))))
                    (vector
                     (map-vector entry used-pointer path))))))
@@ -204,12 +204,12 @@ You should mostly submit a file-name, and either ")
            (result
              (cond (source-directory
                     (parse-directory source-directory file-pathname
-				     :converter-url converter-url
-				     :dereference dereference))
+                                     :converter-url converter-url
+                                     :dereference dereference))
                    (url
                     (parse-url name url
-			       :converter-url converter-url
-			       :dereference dereference))
+                               :converter-url converter-url
+                               :dereference dereference))
                    (collection-id
                     (parse-apis-guru-id name collection-id))
                    (content
@@ -222,7 +222,7 @@ You should mostly submit a file-name, and either ")
                                     (get-openapi-version content)))
                              (case openapi-version
                                (openapi-2.0 (convert-to-openapi-3 :content content
-								  :converter-url converter-url))
+                                                                  :converter-url converter-url))
                                ((openapi-3.0 openapi-3.1) content)
                                (otherwise (error "The Version ~W is not supported"
                                                  openapi-version)))))
@@ -230,12 +230,12 @@ You should mostly submit a file-name, and either ")
                            (to-file (get-data-file name)
                                     (convert-to-openapi-3 :pathname (get-data-file name :type "yaml")
                                                           :content-type "yaml"
-							  :converter-url converter-url)))
+                                                          :converter-url converter-url)))
                           ((uiop:file-exists-p (get-data-file name :type "yml"))
                            (to-file (get-data-file name)
                                     (convert-to-openapi-3 :pathname (get-data-file name :type "yml")
                                                           :content-type "yaml"
-							  :converter-url converter-url)))
+                                                          :converter-url converter-url)))
                           (t
                            (error (concat "There is no " name " json/yaml in the openapi-generator/data folder
 Alternativeyl you can supply one of the keyword parameters (source-directory, apis-guru-id, file-content, url)"))))))))
