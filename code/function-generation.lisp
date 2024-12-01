@@ -482,13 +482,13 @@ symbols will have numbers values are converted into strings at run time.")
                                     (declare (stream ,(intern "S")))
                                     (com.inuoe.jzon:with-writer* (:stream ,(intern "S") :pretty t)
                                       (com.inuoe.jzon:with-object*
-                                        ,@(mapcan (function optional-or-required)
-                                                  property-names)))
-                                    (let ((output
+                                          ,@(mapcan (function optional-or-required)
+                                                    property-names)))
+                                    (let ((,(intern "OUTPUT")
                                             (get-output-stream-string ,(intern "S"))))
-                                      (declare (string output))
-                                      (unless (string= "{}" output)
-                                        output))))))))))))
+                                      (declare (string ,(intern "OUTPUT")))
+                                      (unless (string= "{}" ,(intern "OUTPUT"))
+                                        ,(intern "OUTPUT")))))))))))))
 
 (defmethod get-response-type ((operation operation))
   "Get response type. Return value can be either :json or nil"
